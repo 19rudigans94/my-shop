@@ -34,3 +34,28 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+// Здесь будет запрос к БД для получения данных игры по params.id
+const gameData = {
+id: params.id,
+title: "God of War Ragnarök",
+platform: "PS5",
+price: 4499,
+releaseDate: "9 ноября 2022",
+developer: "Santa Monica Studio",
+publisher: "Sony Interactive Entertainment",
+genre: ["Экшен", "Приключения"],
+description: `God of War Ragnarök — это продолжение истории Кратоса и Атрея в скандинавском мире. 
+    После событий предыдущей части отец и сын должны предотвратить наступление Рагнарёка - 
+    гибели богов и девяти миров. В пути их ждут эпические сражения с богами и монстрами 
+    скандинавской мифологии, а также непростые решения, от которых зависит судьба всех девяти миров.`,
+features: [
+"Продолжение культовой серии God of War",
+"Улучшенная боевая система",
+"Исследование всех девяти миров",
+"Поддержка особенностей DualSense",
+"Графика нового поколения",
+],
+youtubeReview: "https://www.youtube.com/embed/EE-4GvjKcfs",
+images: ["/games/gow-1.jpg", "/games/gow-2.jpg", "/games/gow-3.jpg"],
+};

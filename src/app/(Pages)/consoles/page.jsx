@@ -7,12 +7,12 @@ import Filters from "@/app/components/Filters";
 import MobileFilters from "@/app/components/Filters/MobileFilters";
 import ActiveFilters from "@/app/components/Filters/ActiveFilters";
 import { useFilters } from "@/app/hooks/useFilters";
-import { gamesFilters } from "@/app/config/filters";
-import GameCard from "@/app/components/GameCard";
+import { consolesFilters } from "@/app/config/filters";
+import ConsoleCard from "@/app/components/ConsoleCard";
 
-export default function GamesPage() {
+export default function ConsolePage() {
   const router = useRouter();
-  const [games, setGames] = useState([]);
+  const [consoles, setConsoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const {
@@ -22,10 +22,10 @@ export default function GamesPage() {
     clearFilters,
     isMobileFiltersOpen,
     setIsMobileFiltersOpen,
-  } = useFilters(gamesFilters);
+  } = useFilters(consolesFilters);
 
   useEffect(() => {
-    const fetchGames = async () => {
+    const fetchConsoles = async () => {
       try {
         setLoading(true);
         const queryParams = new URLSearchParams();
@@ -37,11 +37,11 @@ export default function GamesPage() {
           }
         });
 
-        const response = await fetch(`/api/games?${queryParams.toString()}`);
-        if (!response.ok) throw new Error("Ошибка загрузки игр");
+        const response = await fetch(`/api/consoles?${queryParams.toString()}`);
+        if (!response.ok) throw new Error("Ошибка загрузки консолей");
 
         const data = await response.json();
-        setGames(data);
+        setConsoles(data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -49,7 +49,7 @@ export default function GamesPage() {
       }
     };
 
-    fetchGames();
+    fetchConsoles();
   }, [filters]);
 
   if (loading) {
@@ -77,7 +77,7 @@ export default function GamesPage() {
             filters={filters}
             setFilter={setFilter}
             clearFilters={clearFilters}
-            config={gamesFilters}
+            config={consolesFilters}
           />
         </div>
 
@@ -91,7 +91,7 @@ export default function GamesPage() {
             filters={filters}
             removeFilter={removeFilter}
             clearFilters={clearFilters}
-            config={gamesFilters}
+            config={consolesFilters}
             className="mb-6"
           />
 
@@ -103,13 +103,13 @@ export default function GamesPage() {
             Фильтры
           </button>
 
-          {/* Сетка игр */}
+          {/* Сетка консолей */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {games.map((game) => (
-              <GameCard
-                key={game._id}
-                game={game}
-                onClick={() => router.push(`/games/${game.slug}`)}
+            {consoles.map((console) => (
+              <ConsoleCard
+                key={console._id}
+                console={console}
+                onClick={() => router.push(`/consoles/${console.slug}`)}
               />
             ))}
           </div>
@@ -123,7 +123,7 @@ export default function GamesPage() {
         filters={filters}
         setFilter={setFilter}
         clearFilters={clearFilters}
-        config={gamesFilters}
+        config={consolesFilters}
       />
     </div>
   );
