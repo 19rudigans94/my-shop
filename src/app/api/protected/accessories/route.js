@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import Game from "@/models/Game";
+import Accessory from "@/models/Accessory";
 
-// Получение списка игр
+// Получение списка аксессуаров
 export async function GET() {
   try {
     const connection = await connectDB();
@@ -10,24 +10,25 @@ export async function GET() {
       throw new Error("Ошибка подключения к базе данных");
     }
 
-    const games = await Game.find({});
+    const accessories = await Accessory.find({});
     return NextResponse.json({
       success: true,
-      games,
+      accessories,
     });
   } catch (error) {
-    console.error("Ошибка при получении игр:", error);
+    console.error("Ошибка при получении аксессуаров:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Ошибка при получении игр из базы данных",
+        error:
+          error.message || "Ошибка при получении аксессуаров из базы данных",
       },
       { status: 500 }
     );
   }
 }
 
-// Создание новой игры
+// Создание нового аксессуара
 export async function POST(request) {
   try {
     const connection = await connectDB();
@@ -36,19 +37,19 @@ export async function POST(request) {
     }
 
     const data = await request.json();
-    const game = new Game(data);
-    await game.save();
+    const accessory = new Accessory(data);
+    await accessory.save();
 
     return NextResponse.json({
       success: true,
-      game,
+      accessory,
     });
   } catch (error) {
-    console.error("Ошибка при создании игры:", error);
+    console.error("Ошибка при создании аксессуара:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Ошибка при создании игры",
+        error: error.message || "Ошибка при создании аксессуара",
       },
       { status: 500 }
     );
