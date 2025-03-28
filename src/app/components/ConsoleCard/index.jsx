@@ -24,7 +24,6 @@ export default function ConsoleCard({ console, onClick }) {
           {console.state ? "Новый" : "Б/у"}
         </p>
       </div>
-      <div className="absolute top-2 right-2 bg-white dark:bg-gray-800 rounded-full px-2 py-1 text-sm font-medium"></div>
       <div className="p-6">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-2xl font-bold hover:text-yellow-500 transition-colors">

@@ -7,6 +7,7 @@ import { styles } from "./styles";
 
 export const MobileNavigation = ({ items, className }) => {
   const pathname = usePathname();
+  console.log(pathname);
 
   return (
     <nav
@@ -15,7 +16,7 @@ export const MobileNavigation = ({ items, className }) => {
       <div className="max-w-7xl mx-auto px-4">
         <div className="grid grid-cols-4 h-16">
           {items.map(({ href, icon: Icon, text }) => {
-            const isActive = pathname === href;
+            const isActive = pathname.includes(href);
             return (
               <Link key={href} href={href} className={styles.link(isActive)}>
                 <Icon className={styles.icon(isActive)} />

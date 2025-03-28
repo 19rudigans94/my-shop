@@ -61,17 +61,17 @@ export default function AccessoriesPage() {
         queryParams.append("page", pagination.page);
         queryParams.append("limit", pagination.limit);
 
-        console.log(
-          "Отправка запроса:",
-          `/api/accessories?${queryParams.toString()}`
-        );
+        // console.log(
+        //   "Отправка запроса:",
+        //   `/api/accessories?${queryParams.toString()}`
+        // );
 
         const response = await fetch(
           `/api/accessories?${queryParams.toString()}`
         );
         const data = await response.json();
 
-        console.log("Получены данные:", data);
+        // console.log("Получены данные:", data);
 
         if (!response.ok || !data.success) {
           throw new Error(data.error || "Ошибка загрузки аксессуаров");
@@ -87,7 +87,7 @@ export default function AccessoriesPage() {
           }
         );
       } catch (err) {
-        console.error("Ошибка при загрузке аксессуаров:", err);
+        // console.error("Ошибка при загрузке аксессуаров:", err);
         setError(err.message);
         setAccessories([]);
       } finally {
@@ -124,35 +124,35 @@ export default function AccessoriesPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Фильтры для десктопа */}
         <div className="hidden lg:block">
-          <Filters
+          {/* <Filters
             filters={filters}
             setFilter={setFilter}
             clearFilters={clearFilters}
             config={accessoriesFilters}
-          />
+          /> */}
         </div>
 
         {/* Основной контент */}
         <div className="lg:col-span-3">
           {/* Поиск */}
-          <Search className="mb-6" />
+          {/* <Search className="mb-6" /> */}
 
           {/* Активные фильтры */}
-          <ActiveFilters
+          {/* <ActiveFilters
             filters={filters}
             removeFilter={removeFilter}
             clearFilters={clearFilters}
             config={accessoriesFilters}
             className="mb-6"
-          />
+          /> */}
 
           {/* Кнопка фильтров для мобильных */}
-          <button
+          {/* <button
             onClick={() => setIsMobileFiltersOpen(true)}
             className="lg:hidden mb-6 w-full flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             Фильтры
-          </button>
+          </button> */}
 
           {/* Сетка аксессуаров */}
           {accessories.length > 0 ? (
@@ -196,14 +196,14 @@ export default function AccessoriesPage() {
       </div>
 
       {/* Мобильные фильтры */}
-      <MobileFilters
+      {/* <MobileFilters
         isOpen={isMobileFiltersOpen}
         onClose={() => setIsMobileFiltersOpen(false)}
         filters={filters}
         setFilter={setFilter}
         clearFilters={clearFilters}
         config={accessoriesFilters}
-      />
+      /> */}
     </div>
   );
 }

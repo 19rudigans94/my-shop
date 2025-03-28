@@ -19,11 +19,11 @@ export default function AccessoryDetailsPage() {
         setLoading(true);
         setError(null);
 
-        console.log("Загрузка аксессуара:", params.slug);
+        // console.log("Загрузка аксессуара:", params.slug);
         const response = await fetch(`/api/accessories/${params.slug}`);
         const data = await response.json();
 
-        console.log("Получены данные:", data);
+        // console.log("Получены данные:", data);
 
         if (!response.ok || !data.success) {
           throw new Error(data.error || "Ошибка загрузки аксессуара");

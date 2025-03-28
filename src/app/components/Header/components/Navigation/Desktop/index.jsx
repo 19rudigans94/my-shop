@@ -14,7 +14,7 @@ export const DesktopNavigation = ({ items }) => {
     <nav className="hidden lg:flex items-center justify-center flex-1 mx-8">
       <div className="flex items-center space-x-2">
         {items.map(({ href, label, icon: Icon, submenu }) => {
-          const isActive = pathname.startsWith(href);
+          const isActive = pathname.includes(href);
           const hasSubmenu = submenu && submenu.length > 0;
 
           return (

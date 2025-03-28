@@ -125,16 +125,24 @@ function generateEmailTemplate({ name, email, message }) {
         <meta charset="utf-8">
         <title>Новое сообщение от ${name}</title>
       </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h1 style="color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">
-            Новое сообщение обратной связи
-          </h1>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #1a1a1a; background-color: #f5f5f5;">
+        <div style="max-width: 600px; margin: 20px auto; padding: 30px; background-color: #ffffff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #FFD700; font-size: 24px; margin: 0; padding-bottom: 15px; border-bottom: 3px solid #FFD700;">
+              Сообщение с формы обратной связи -- GoldGames
+            </h1>
+          </div>
           <div style="margin: 20px 0;">
-            <p><strong>Имя:</strong> ${name}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Сообщение:</strong></p>
-            <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin-top: 10px;">
+            <p style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin: 10px 0;">
+              <strong style="color: #FFD700;">Имя:</strong> 
+              <span style="color: #333;">${name}</span>
+            </p>
+            <p style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin: 10px 0;">
+              <strong style="color: #FFD700;">Email:</strong> 
+              <span style="color: #333;">${email}</span>
+            </p>
+            <p style="color: #FFD700; font-weight: bold; margin-top: 20px;">Сообщение:</p>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 10px; border-left: 4px solid #FFD700;">
               ${message.replace(/\n/g, "<br>")}
             </div>
           </div>

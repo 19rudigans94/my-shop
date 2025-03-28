@@ -73,35 +73,35 @@ export default function ConsolePage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Фильтры для десктопа */}
         <div className="hidden lg:block">
-          <Filters
+          {/* <Filters
             filters={filters}
             setFilter={setFilter}
             clearFilters={clearFilters}
             config={consolesFilters}
-          />
+          /> */}
         </div>
 
         {/* Основной контент */}
         <div className="lg:col-span-3">
           {/* Поиск */}
-          <Search className="mb-6" />
+          {/* <Search className="mb-6" /> */}
 
           {/* Активные фильтры */}
-          <ActiveFilters
+          {/* <ActiveFilters
             filters={filters}
             removeFilter={removeFilter}
             clearFilters={clearFilters}
             config={consolesFilters}
             className="mb-6"
-          />
+          /> */}
 
           {/* Кнопка фильтров для мобильных */}
-          <button
+          {/* <button
             onClick={() => setIsMobileFiltersOpen(true)}
             className="lg:hidden mb-6 w-full flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             Фильтры
-          </button>
+          </button> */}
 
           {/* Сетка консолей */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -117,14 +117,14 @@ export default function ConsolePage() {
       </div>
 
       {/* Мобильные фильтры */}
-      <MobileFilters
+      {/* <MobileFilters
         isOpen={isMobileFiltersOpen}
         onClose={() => setIsMobileFiltersOpen(false)}
         filters={filters}
         setFilter={setFilter}
         clearFilters={clearFilters}
         config={consolesFilters}
-      />
+      /> */}
     </div>
   );
 }

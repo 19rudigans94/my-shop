@@ -23,11 +23,11 @@ export async function GET(request) {
       }
     }
 
-    console.log("Фильтры:", filters);
+    // console.log("Фильтры:", filters);
 
     // Получаем общее количество записей
     const total = await Accessory.countDocuments(filters);
-    console.log("Всего записей:", total);
+    // console.log("Всего записей:", total);
 
     // Получаем отфильтрованные аксессуары с пагинацией
     const accessories = await Accessory.find(filters)
@@ -36,7 +36,7 @@ export async function GET(request) {
       .limit(limit)
       .lean(); // Преобразуем в простые объекты
 
-    console.log("Найдено аксессуаров:", accessories.length);
+    // console.log("Найдено аксессуаров:", accessories.length);
 
     if (!accessories) {
       throw new Error("Аксессуары не найдены");
