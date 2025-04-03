@@ -13,6 +13,10 @@ const gameSchema = new mongoose.Schema({
     type: [String],
     required: true,
   },
+  genre: {
+    type: [String],
+    default: [],
+  },
   releaseDate: {
     type: Date,
     required: true,

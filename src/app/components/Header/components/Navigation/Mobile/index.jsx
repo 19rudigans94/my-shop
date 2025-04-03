@@ -7,7 +7,6 @@ import { styles } from "./styles";
 
 export const MobileNavigation = ({ items, className }) => {
   const pathname = usePathname();
-  console.log(pathname);
 
   return (
     <nav

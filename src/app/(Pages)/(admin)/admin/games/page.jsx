@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import GameForm from "@/app/components/admin/GameForm";
 
 export default function GamesAdminPage() {
   const [games, setGames] = useState([]);
@@ -56,6 +57,36 @@ export default function GamesAdminPage() {
     }
   };
 
+  const handleSubmit = async (formData) => {
+    try {
+      const url = editingGame
+        ? `/api/protected/games/${editingGame._id}`
+        : "/api/protected/games";
+
+      const method = editingGame ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Ошибка при сохранении игры");
+      }
+
+      setIsEditing(false);
+      setEditingGame(null);
+      fetchGames();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -100,11 +131,9 @@ export default function GamesAdminPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Название
                 </th>
+
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Платформы
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Описание
+                  На складе
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Действия
@@ -132,21 +161,10 @@ export default function GamesAdminPage() {
                       {game.title}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-1">
-                      {game.platforms.map((platform) => (
-                        <span
-                          key={platform}
-                          className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                        >
-                          {platform}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
+
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-500 dark:text-gray-400 max-w-md truncate">
-                      {game.description}
+                      {game.stock}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -176,7 +194,11 @@ export default function GamesAdminPage() {
             <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
               {editingGame ? "Редактировать игру" : "Добавить новую игру"}
             </h2>
-            {/* Здесь будет форма редактирования/создания */}
+            <GameForm
+              game={editingGame}
+              onSubmit={handleSubmit}
+              onCancel={() => setIsEditing(false)}
+            />
             <div className="flex justify-end mt-4">
               <button
                 onClick={() => setIsEditing(false)}

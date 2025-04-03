@@ -10,6 +10,7 @@ export default function AdminLayout({ children }) {
     { name: "Игры", href: "/admin/games" },
     { name: "Аксессуары", href: "/admin/accessories" },
     { name: "Консоли", href: "/admin/consoles" },
+    { name: "Ключи", href: "/admin/keys" },
   ];
 
   return (

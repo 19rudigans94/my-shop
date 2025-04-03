@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import AccessoryForm from "@/app/components/admin/AccessoryForm";
 
 export default function AccessoriesAdminPage() {
   const [accessories, setAccessories] = useState([]);
@@ -59,6 +60,36 @@ export default function AccessoriesAdminPage() {
     }
   };
 
+  const handleSubmit = async (formData) => {
+    try {
+      const url = editingAccessory
+        ? `/api/protected/accessories/${editingAccessory._id}`
+        : "/api/protected/accessories";
+
+      const method = editingAccessory ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Ошибка при сохранении аксессуара");
+      }
+
+      setIsEditing(false);
+      setEditingAccessory(null);
+      fetchAccessories();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -104,10 +135,7 @@ export default function AccessoriesAdminPage() {
                   Название
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Совместимость
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Описание
+                  На складе
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Действия
@@ -135,14 +163,10 @@ export default function AccessoriesAdminPage() {
                       {accessory.title}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                      {accessory.platform}
-                    </span>
-                  </td>
+
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-500 dark:text-gray-400 max-w-md truncate">
-                      {accessory.description}
+                      {accessory.stock}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -174,15 +198,14 @@ export default function AccessoriesAdminPage() {
                 ? "Редактировать аксессуар"
                 : "Добавить новый аксессуар"}
             </h2>
-            {/* Здесь будет форма редактирования/создания */}
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={() => setIsEditing(false)}
-                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-              >
-                Закрыть
-              </button>
-            </div>
+            <AccessoryForm
+              accessory={editingAccessory}
+              onSubmit={handleSubmit}
+              onCancel={() => {
+                setIsEditing(false);
+                setEditingAccessory(null);
+              }}
+            />
           </div>
         </div>
       )}

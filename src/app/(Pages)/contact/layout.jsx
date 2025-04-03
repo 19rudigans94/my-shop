@@ -38,7 +38,7 @@ export default function ContactLayout({ children }) {
           </ul>
         </nav>
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-16">
         {children}
       </div>
     </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import PriceList from "./components/priceList";
+import VideoPlayer from "@/app/components/VideoPlayer";
 // import { useCartStore } from "@/app/store/useCartStore";
 
 export default function GameDetailsPage() {
@@ -12,6 +13,28 @@ export default function GameDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   // const addToCart = useCartStore((state) => state.addToCart);
+
+  // Функция для конвертации YouTube URL в формат для встраивания
+  const getEmbedUrl = (url) => {
+    if (!url) return null;
+
+    // Если URL уже в формате embed, возвращаем его
+    if (url.includes("youtube.com/embed/")) {
+      return url;
+    }
+
+    // Извлекаем ID видео из разных форматов URL
+    let videoId = "";
+
+    if (url.includes("youtube.com/watch?v=")) {
+      videoId = url.split("v=")[1].split("&")[0];
+    } else if (url.includes("youtu.be/")) {
+      videoId = url.split("youtu.be/")[1];
+    }
+
+    // Если ID найден, возвращаем URL для встраивания
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+  };
 
   useEffect(() => {
     const fetchGame = async () => {
@@ -34,7 +57,13 @@ export default function GameDetailsPage() {
           throw new Error("Игра не найдена");
         }
 
-        setGame(data.game);
+        // Конвертируем YouTube URL при загрузке данных
+        const gameData = {
+          ...data.game,
+          youtubeUrl: getEmbedUrl(data.game.youtubeUrl),
+        };
+
+        setGame(gameData);
       } catch (err) {
         console.error("Ошибка при загрузке игры:", err);
         setError(err?.message || "Произошла ошибка при загрузке игры");
@@ -130,23 +159,6 @@ export default function GameDetailsPage() {
               </p>
             </div>
 
-            {/* Видео */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                Трейлер игры
-              </h2>
-              <div className="aspect-video w-full relative rounded-xl overflow-hidden">
-                <iframe
-                  className="absolute top-0 left-0 w-full h-full"
-                  src={game.youtubeUrl}
-                  title={`${game.title} - трейлер`}
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-            </div>
-
             {/* Характеристики */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
               <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
@@ -193,8 +205,15 @@ export default function GameDetailsPage() {
             </div>
           </div>
 
-          {/* Правая колонка с ценами */}
-          <div className="lg:col-span-1">
+          {/* Правая колонка с видео и ценами */}
+          <div className="lg:col-span-1 space-y-8">
+            {/* Видео */}
+            <VideoPlayer
+              url={game.youtubeUrl}
+              title={`${game.title} - трейлер`}
+            />
+
+            {/* Цены */}
             <div className="sticky top-8">
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
                 <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
