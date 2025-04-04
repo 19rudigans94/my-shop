@@ -8,6 +8,7 @@ import { useParams } from "next/navigation";
 export default function PriceList() {
   const params = useParams();
   const [prices, setPrices] = useState([]);
+  const [digitalInfo, setDigitalInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedPlatform, setSelectedPlatform] = useState(null);
@@ -20,9 +21,12 @@ export default function PriceList() {
         setLoading(true);
         setError(null);
 
+        console.log("Начинаем загрузку цен для slug:", params.slug);
+
+        // Загрузка цен физических копий
         const response = await fetch(`/api/games/${params.slug}/prices`);
         const data = await response.json();
-
+        console.warn("Цены физических копий:", data);
         if (!response.ok || !data.success) {
           throw new Error(data?.error || "Ошибка загрузки цен");
         }
@@ -35,6 +39,30 @@ export default function PriceList() {
           if (data.prices[0].variants.length > 0) {
             setSelectedVariant(data.prices[0].variants[0]);
           }
+        }
+
+        console.log("Начинаем загрузку цифровых копий");
+
+        // Загрузка информации о цифровых копиях
+        const digitalResponse = await fetch(
+          `/api/games/${params.slug}/digital`
+        );
+        console.log("Статус ответа цифровых копий:", digitalResponse.status);
+
+        const digitalData = await digitalResponse.json();
+        console.warn("Данные цифровых копий:", digitalData);
+
+        if (digitalResponse.ok && digitalData.success) {
+          console.log(
+            "Устанавливаем информацию о цифровых копиях:",
+            digitalData
+          );
+          setDigitalInfo(digitalData);
+        } else {
+          console.warn(
+            "Ошибка при загрузке цифровых копий:",
+            digitalData.error
+          );
         }
       } catch (err) {
         console.error("Ошибка при загрузке цен:", err);
@@ -68,6 +96,19 @@ export default function PriceList() {
     console.log("addToCard");
   };
 
+  const handleAddDigitalToCart = () => {
+    // if (digitalInfo) {
+    //   addToCart({
+    //     id: params.slug,
+    //     platform: digitalInfo.platform,
+    //     condition: "digital",
+    //     price: digitalInfo.price,
+    //     quantity: 1,
+    //   });
+    // }
+    console.log("addDigitalToCart");
+  };
+
   if (loading) {
     return (
       <div className="animate-pulse space-y-4">
@@ -81,33 +122,37 @@ export default function PriceList() {
     return <div className="text-red-500">Ошибка: {error}</div>;
   }
 
-  if (!prices.length) {
+  if (!prices.length && !digitalInfo?.hasDigitalCopies) {
     return <div className="text-gray-500">Цены не найдены</div>;
   }
 
   return (
     <div className="space-y-6">
+      <h2 className="text-2xl font-bold mb-6">Варианты покупки</h2>
+
       {/* Выбор платформы */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Платформа
-        </label>
-        <div className="flex gap-2">
-          {prices.map((price) => (
-            <button
-              key={price.platform}
-              onClick={() => handlePlatformChange(price.platform)}
-              className={`px-4 py-2 rounded-lg border ${
-                selectedPlatform === price.platform
-                  ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20"
-                  : "border-gray-300 dark:border-gray-600"
-              }`}
-            >
-              {price.platform}
-            </button>
-          ))}
+      {prices.length > 0 && (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Платформа
+          </label>
+          <div className="flex gap-2">
+            {prices.map((price) => (
+              <button
+                key={price.platform}
+                onClick={() => handlePlatformChange(price.platform)}
+                className={`px-4 py-2 rounded-lg border ${
+                  selectedPlatform === price.platform
+                    ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20"
+                    : "border-gray-300 dark:border-gray-600"
+                }`}
+              >
+                {price.platform}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Варианты состояния и цены */}
       {selectedPlatform && (
@@ -148,6 +193,32 @@ export default function PriceList() {
               <span>Добавить в корзину</span>
             </button>
           )}
+        </div>
+      )}
+
+      {/* Цифровая версия */}
+      {digitalInfo?.hasDigitalCopies && (
+        <div className="mt-8 p-4 rounded-lg border border-gray-300 dark:border-gray-600">
+          <div className="flex justify-between items-center">
+            <div>
+              <div className="text-lg font-semibold">
+                Цифровая версия ({digitalInfo.platform})
+              </div>
+              <div className="text-2xl font-bold">{digitalInfo.price} ₸</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                В наличии: {digitalInfo.totalCopies}
+              </div>
+            </div>
+            {digitalInfo.totalCopies > 0 && (
+              <button
+                onClick={handleAddDigitalToCart}
+                className="flex items-center gap-2 bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600 transition-colors"
+              >
+                <ShoppingCart className="w-5 h-5" />
+                <span>Купить</span>
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

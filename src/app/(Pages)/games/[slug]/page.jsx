@@ -216,9 +216,6 @@ export default function GameDetailsPage() {
             {/* Цены */}
             <div className="sticky top-8">
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-                <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                  Варианты покупки
-                </h2>
                 <PriceList />
               </div>
             </div>

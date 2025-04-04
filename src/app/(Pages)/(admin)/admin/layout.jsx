@@ -8,7 +8,7 @@ export default function AdminLayout({ children }) {
 
   const navigation = [
     { name: "Игры", href: "/admin/games" },
-    { name: "Ключи к играм", href: "/admin/keys" },
+    { name: "Ключи и Диски", href: "/admin/keys" },
     { name: "Аксессуары", href: "/admin/accessories" },
     { name: "Консоли", href: "/admin/consoles" },
   ];
