@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
-
 const PLATFORMS = ["PS5", "Xbox Series X|S", "Nintendo Switch", "PC"];
 
 export default function AccessoryForm({ accessory, onSubmit, onCancel }) {
@@ -11,9 +9,8 @@ export default function AccessoryForm({ accessory, onSubmit, onCancel }) {
     description: "",
     platform: "",
     price: "",
-    stock: "",
+    stock: "0",
     image: "",
-    features: [],
   });
 
   useEffect(() => {
@@ -22,17 +19,32 @@ export default function AccessoryForm({ accessory, onSubmit, onCancel }) {
         title: accessory.title || "",
         description: accessory.description || "",
         platform: accessory.platform || "",
-        price: accessory.price || "",
-        stock: accessory.stock || "",
+        price: accessory.price?.toString() || "",
+        stock: accessory.stock?.toString() || "0",
         image: accessory.image || "",
-        features: accessory.features || [],
       });
     }
   }, [accessory]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+
+    // Преобразуем строковые значения в числа и валидируем
+    const validatedData = {
+      ...formData,
+      price: Number(formData.price),
+      stock: Math.max(0, Math.floor(Number(formData.stock))), // Округляем вниз и не допускаем отрицательные значения
+    };
+
+    onSubmit(validatedData);
+  };
+
+  const handleNumberChange = (e, field) => {
+    const value = e.target.value;
+    // Разрешаем только положительные числа
+    if (value === "" || /^\d+$/.test(value)) {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    }
   };
 
   const handleFeatureAdd = () => {
@@ -117,13 +129,14 @@ export default function AccessoryForm({ accessory, onSubmit, onCancel }) {
             Количество на складе
           </label>
           <input
-            type="number"
+            type="text"
             value={formData.stock}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, stock: e.target.value }))
-            }
+            onChange={(e) => handleNumberChange(e, "stock")}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
             required
+            min="0"
+            pattern="\d*"
+            inputMode="numeric"
           />
         </div>
 
@@ -156,41 +169,6 @@ export default function AccessoryForm({ accessory, onSubmit, onCancel }) {
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
           required
         />
-      </div>
-
-      <div>
-        <div className="flex justify-between items-center mb-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Характеристики
-          </label>
-          <button
-            type="button"
-            onClick={handleFeatureAdd}
-            className="text-sm text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
-          >
-            + Добавить характеристику
-          </button>
-        </div>
-        <div className="space-y-2">
-          {formData.features.map((feature, index) => (
-            <div key={index} className="flex gap-2">
-              <input
-                type="text"
-                value={feature}
-                onChange={(e) => handleFeatureChange(index, e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Введите характеристику"
-              />
-              <button
-                type="button"
-                onClick={() => handleFeatureRemove(index)}
-                className="px-3 py-2 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-              >
-                Удалить
-              </button>
-            </div>
-          ))}
-        </div>
       </div>
 
       <div className="flex justify-end space-x-3">

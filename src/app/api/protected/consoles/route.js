@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Console from "@/models/Console";
+import { generateSlug } from "@/lib/utils";
 
 // Получение списка консолей
 export async function GET() {
@@ -36,8 +37,52 @@ export async function POST(request) {
     }
 
     const data = await request.json();
-    const console = new Console(data);
-    await console.save();
+
+    // Проверяем обязательные поля
+    if (
+      !data.title ||
+      typeof data.state === "undefined" ||
+      !data.price ||
+      !data.description ||
+      !data.image
+    ) {
+      throw new Error("Не все обязательные поля заполнены");
+    }
+
+    // Проверяем и преобразуем числовые поля
+    if (typeof data.price === "string") {
+      data.price = parseFloat(data.price);
+    }
+    if (typeof data.stock === "string") {
+      data.stock = parseInt(data.stock, 10);
+    }
+
+    // Проверяем на отрицательные значения
+    if (data.price < 0) {
+      throw new Error("Цена не может быть отрицательной");
+    }
+    if (data.stock < 0) {
+      throw new Error("Количество на складе не может быть отрицательным");
+    }
+
+    // Генерируем слаг из названия
+    let slug = generateSlug(data.title);
+
+    // Проверяем, существует ли уже консоль с таким слагом
+    let existingConsole = await Console.findOne({ slug });
+    let counter = 1;
+
+    // Если слаг уже существует, добавляем к нему число
+    while (existingConsole) {
+      slug = `${generateSlug(data.title)}-${counter}`;
+      existingConsole = await Console.findOne({ slug });
+      counter++;
+    }
+
+    // Добавляем слаг в данные
+    data.slug = slug;
+
+    const console = await Console.create(data);
 
     return NextResponse.json({
       success: true,

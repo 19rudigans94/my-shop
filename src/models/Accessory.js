@@ -8,11 +8,18 @@ const accessorySchema = new mongoose.Schema({
   platform: {
     type: String,
     required: true,
-    enum: ["PS5", "Xbox", "Switch"],
+    enum: ["PS5", "Xbox Series X|S", "Nintendo Switch", "PC"],
   },
   price: {
     type: Number,
     required: true,
+    min: 0,
+  },
+  stock: {
+    type: Number,
+    required: true,
+    min: 0,
+    default: 0,
   },
   description: {
     type: String,

@@ -1,6 +1,8 @@
 "use client";
 
 import Image from "next/image";
+const blurDataURL =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=";
 
 export default function GameCard({ game, onClick }) {
   return (
@@ -12,6 +14,8 @@ export default function GameCard({ game, onClick }) {
         <Image
           src={game.image}
           alt={game.title}
+          placeholder="blur"
+          blurDataURL={blurDataURL}
           fill
           className="object-cover"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

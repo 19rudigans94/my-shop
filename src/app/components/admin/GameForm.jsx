@@ -75,12 +75,12 @@ export default function GameForm({ game, onSubmit, onCancel }) {
     }));
   };
 
-  const handleFeatureRemove = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      features: prev.features.filter((_, i) => i !== index),
-    }));
-  };
+  // const handleFeatureRemove = (index) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     features: prev.features.filter((_, i) => i !== index),
+  //   }));
+  // };
 
   const handleGenreAdd = () => {
     setFormData((prev) => {

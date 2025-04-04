@@ -4,12 +4,18 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import VideoPlayer from "@/app/components/VideoPlayer";
+import AddToCartButton from "@/app/components/AddToCartButton";
 
 export default function ConsoleDetailsPage() {
   const params = useParams();
   const [console, setConsole] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchConsole = async () => {
@@ -69,13 +75,18 @@ export default function ConsoleDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div
+      className="min-h-screen bg-gray-50 dark:bg-gray-900"
+      suppressHydrationWarning
+    >
       {/* Верхний баннер с изображением */}
       <div className="relative w-full h-[50vh] md:h-[60vh] lg:h-[70vh]">
         <div className="absolute inset-0">
           <Image
             src={console.image}
             alt={console.title}
+            placeholder="blur"
+            blurDataURL={console.image}
             fill
             className="object-cover brightness-50"
             sizes="100vw"
@@ -90,7 +101,7 @@ export default function ConsoleDetailsPage() {
             </h1>
             <div className="flex flex-wrap gap-2 mb-4">
               <span className="px-3 py-1 bg-gray-800/80 text-white rounded-full text-sm">
-                {console.manufacturer}
+                {console.state ? "Новый" : "Б/у"}
               </span>
             </div>
           </div>
@@ -111,26 +122,16 @@ export default function ConsoleDetailsPage() {
 
             {/* Характеристики */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                Характеристики
-              </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                    Производитель
+                    Состояние
                   </h3>
                   <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-sm">
-                    {console.manufacturer}
+                    {console.state ? "Новый" : "Б/у"}
                   </span>
                 </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                    Год выпуска
-                  </h3>
-                  <p className="text-gray-800 dark:text-gray-200">
-                    {console.releaseYear}
-                  </p>
-                </div>
+
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                     Артикул
@@ -158,14 +159,11 @@ export default function ConsoleDetailsPage() {
                   Цена
                 </h2>
                 <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {console.price} ₽
+                  {console.price.toLocaleString()} ₸
                 </div>
-                <button
-                  onClick={() => console.log("Добавить в корзину")}
-                  className="w-full mt-4 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                >
-                  Добавить в корзину
-                </button>
+                {mounted && (
+                  <AddToCartButton item={console} className="w-full mt-4" />
+                )}
               </div>
             </div>
           </div>

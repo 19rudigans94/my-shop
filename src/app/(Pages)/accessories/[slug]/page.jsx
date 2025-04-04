@@ -4,12 +4,18 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import VideoPlayer from "@/app/components/VideoPlayer";
+import AddToCartButton from "@/app/components/AddToCartButton";
 
 export default function AccessoryDetailsPage() {
   const params = useParams();
   const [accessory, setAccessory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchAccessory = async () => {
@@ -69,7 +75,10 @@ export default function AccessoryDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div
+      className="min-h-screen bg-gray-50 dark:bg-gray-900"
+      suppressHydrationWarning
+    >
       {/* Верхний баннер с изображением */}
       <div className="relative w-full h-[50vh] md:h-[60vh] lg:h-[70vh]">
         <div className="absolute inset-0">
@@ -131,6 +140,22 @@ export default function AccessoryDetailsPage() {
                     {accessory._id}
                   </p>
                 </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                    Наличие
+                  </h3>
+                  <p className="text-gray-800 dark:text-gray-200">
+                    {accessory.stock > 0 ? (
+                      <span className="text-green-600 dark:text-green-400">
+                        В наличии ({accessory.stock} шт.)
+                      </span>
+                    ) : (
+                      <span className="text-red-600 dark:text-red-400">
+                        Нет в наличии
+                      </span>
+                    )}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -150,14 +175,11 @@ export default function AccessoryDetailsPage() {
                   Цена
                 </h2>
                 <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {accessory.price} ₽
+                  {accessory.price.toLocaleString()} ₸
                 </div>
-                <button
-                  onClick={() => console.log("Добавить в корзину")}
-                  className="w-full mt-4 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                >
-                  Добавить в корзину
-                </button>
+                {mounted && (
+                  <AddToCartButton item={accessory} className="w-full mt-4" />
+                )}
               </div>
             </div>
           </div>

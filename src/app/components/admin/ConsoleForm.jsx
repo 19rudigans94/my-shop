@@ -7,12 +7,11 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    manufacturer: "",
-    releaseYear: "",
+    state: true,
     price: "",
     stock: "",
     image: "",
-    features: [],
+    youtubeUrl: "",
   });
 
   useEffect(() => {
@@ -20,12 +19,11 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
       setFormData({
         title: console.title || "",
         description: console.description || "",
-        manufacturer: console.manufacturer || "",
-        releaseYear: console.releaseYear || "",
+        state: console.state ?? true,
         price: console.price || "",
         stock: console.stock || "",
         image: console.image || "",
-        features: console.features || [],
+        youtubeUrl: console.youtubeUrl || "",
       });
     }
   }, [console]);
@@ -33,29 +31,6 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
-  };
-
-  const handleFeatureAdd = () => {
-    setFormData((prev) => ({
-      ...prev,
-      features: [...prev.features, ""],
-    }));
-  };
-
-  const handleFeatureChange = (index, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      features: prev.features.map((feature, i) =>
-        i === index ? value : feature
-      ),
-    }));
-  };
-
-  const handleFeatureRemove = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      features: prev.features.filter((_, i) => i !== index),
-    }));
   };
 
   return (
@@ -78,32 +53,22 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Производитель
+            Состояние
           </label>
-          <input
-            type="text"
-            value={formData.manufacturer}
+          <select
+            value={formData.state ? "true" : "false"}
             onChange={(e) =>
-              setFormData((prev) => ({ ...prev, manufacturer: e.target.value }))
+              setFormData((prev) => ({
+                ...prev,
+                state: e.target.value === "true",
+              }))
             }
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
             required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Год выпуска
-          </label>
-          <input
-            type="number"
-            value={formData.releaseYear}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, releaseYear: e.target.value }))
-            }
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
-            required
-          />
+          >
+            <option value="true">Новый</option>
+            <option value="false">Б/у</option>
+          </select>
         </div>
 
         <div>
@@ -118,6 +83,7 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
             }
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
             required
+            min="0"
           />
         </div>
 
@@ -133,6 +99,7 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
             }
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
             required
+            min="0"
           />
         </div>
 
@@ -150,6 +117,20 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
             required
           />
         </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            URL видео
+          </label>
+          <input
+            type="url"
+            value={formData.youtubeUrl}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, youtubeUrl: e.target.value }))
+            }
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+          />
+        </div>
       </div>
 
       <div>
@@ -165,41 +146,6 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
           required
         />
-      </div>
-
-      <div>
-        <div className="flex justify-between items-center mb-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Характеристики
-          </label>
-          <button
-            type="button"
-            onClick={handleFeatureAdd}
-            className="text-sm text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
-          >
-            + Добавить характеристику
-          </button>
-        </div>
-        <div className="space-y-2">
-          {formData.features.map((feature, index) => (
-            <div key={index} className="flex gap-2">
-              <input
-                type="text"
-                value={feature}
-                onChange={(e) => handleFeatureChange(index, e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Введите характеристику"
-              />
-              <button
-                type="button"
-                onClick={() => handleFeatureRemove(index)}
-                className="px-3 py-2 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-              >
-                Удалить
-              </button>
-            </div>
-          ))}
-        </div>
       </div>
 
       <div className="flex justify-end space-x-3">

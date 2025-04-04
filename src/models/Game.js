@@ -17,14 +17,6 @@ const gameSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
-  releaseDate: {
-    type: Date,
-    required: true,
-  },
-  publisher: {
-    type: String,
-    required: true,
-  },
   image: {
     type: String,
     required: true,
