@@ -10,45 +10,64 @@ export async function GET() {
     const games = await db.collection("games").find({}).toArray();
     console.log("Найдено игр:", games.length);
 
-    // Получаем все цифровые копии
-    const digitalCopies = await db
+    // Получаем все цифровые копии (наборы)
+    const digitalCopySets = await db
       .collection("digitalcopies")
       .find({})
       .toArray();
-    console.log("Найдено цифровых копий:", digitalCopies.length);
+    console.log("Найдено наборов цифровых копий:", digitalCopySets.length);
 
     // Создаем объект для хранения результатов
     const results = [];
 
     // Проходим по каждой игре
     for (const game of games) {
-      // Ищем все цифровые копии для текущей игры
-      const gameCopies = digitalCopies.filter((copy) => {
-        const copyGameId =
-          copy.gameId instanceof ObjectId
-            ? copy.gameId.toString()
-            : copy.gameId;
+      // Находим все наборы цифровых копий для текущей игры
+      const gameDigitalSets = digitalCopySets.filter((set) => {
+        const setGameId =
+          set.gameId instanceof ObjectId ? set.gameId.toString() : set.gameId;
         const gameId =
           game._id instanceof ObjectId ? game._id.toString() : game._id;
-        return copyGameId === gameId;
+        return setGameId === gameId;
+      });
+
+      // Преобразуем данные для каждого набора
+      const gameSetsData = gameDigitalSets.map((set) => {
+        // Считаем активные учетные данные
+        const credentials = Array.isArray(set.credentials)
+          ? set.credentials
+          : [];
+        const activeCredentials = credentials.filter((cred) => cred.isActive);
+
+        return {
+          _id: set._id,
+          platform: set.platform || "PS5",
+          price: set.price || 0,
+          isActive: set.isActive || false,
+          totalCredentials: credentials.length,
+          activeCredentials: activeCredentials.length,
+          credentials: credentials.map((cred) => ({
+            login: cred.login,
+            password: cred.password,
+            isActive: cred.isActive,
+            createdAt: cred.createdAt,
+          })),
+        };
       });
 
       // Добавляем результат в массив
       results.push({
         gameId: game._id,
         gameTitle: game.title,
-        copies: gameCopies.map((copy) => ({
-          _id: copy._id,
-          login: copy.login,
-          password: copy.password,
-          price: copy.price || 0,
-          isActive: copy.isActive || false,
-          platform: copy.platform || "PS5",
-        })),
-        totalCopies: gameCopies.length,
-        activeCopies: gameCopies.filter((copy) => copy.isActive).length,
-        totalPrice: gameCopies.reduce(
-          (sum, copy) => sum + (copy.price || 0),
+        digitalSets: gameSetsData,
+        totalSets: gameSetsData.length,
+        activeSets: gameSetsData.filter((set) => set.isActive).length,
+        totalCredentials: gameSetsData.reduce(
+          (sum, set) => sum + set.totalCredentials,
+          0
+        ),
+        activeCredentials: gameSetsData.reduce(
+          (sum, set) => sum + set.activeCredentials,
           0
         ),
       });
@@ -76,11 +95,21 @@ export async function POST(request) {
     const db = mongoose.connection.db;
 
     const data = await request.json();
-    const { copyId, gameId, login, password, price, isActive, platform } = data;
+    const {
+      operation, // тип операции: 'create_set', 'update_set', 'add_credential', 'update_credential'
+      setId, // ID набора цифровых копий
+      gameId, // ID игры
+      platform, // Платформа
+      price, // Цена
+      isActive, // Активность набора
+      credential, // информация о новых учетных данных {login, password}
+      credentialId, // ID учетных данных для обновления
+      credentialIsActive, // Активность учетных данных
+    } = data;
 
-    // Если copyId не предоставлен, создаем новую запись
-    if (!copyId) {
-      if (!gameId || !login || !password) {
+    // Создание нового набора цифровых копий
+    if (operation === "create_set") {
+      if (!gameId || !platform || price === undefined) {
         return Response.json(
           {
             success: false,
@@ -90,59 +119,179 @@ export async function POST(request) {
         );
       }
 
-      // Создаем новую цифровую копию
-      const newCopy = {
+      // Создаем новый набор цифровых копий
+      const newDigitalSet = {
         gameId: new ObjectId(gameId),
-        login,
-        password,
-        price: price || 0,
-        isActive: isActive ?? true,
-        platform: platform || "PS5",
+        platform,
+        price,
+        isActive: isActive !== undefined ? isActive : true,
+        credentials: [], // начинаем с пустого массива учетных данных
         createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
-      const result = await db.collection("digitalcopies").insertOne(newCopy);
+      // Если предоставлены учетные данные, добавляем их
+      if (credential && credential.login && credential.password) {
+        newDigitalSet.credentials.push({
+          login: credential.login,
+          password: credential.password,
+          isActive: true,
+          createdAt: new Date(),
+        });
+      }
+
+      const result = await db
+        .collection("digitalcopies")
+        .insertOne(newDigitalSet);
 
       return Response.json({
         success: true,
-        message: "Создана новая цифровая копия",
-        copyId: result.insertedId,
+        message: "Создан новый набор цифровых копий",
+        setId: result.insertedId,
       });
     }
 
-    // Если copyId предоставлен, обновляем существующую запись
-    const updateData = {};
-    if (login !== undefined) updateData.login = login;
-    if (password !== undefined) updateData.password = password;
-    if (price !== undefined) updateData.price = price;
-    if (isActive !== undefined) updateData.isActive = isActive;
-    if (platform !== undefined) updateData.platform = platform;
-    updateData.updatedAt = new Date();
+    // Обновление набора цифровых копий
+    else if (operation === "update_set") {
+      if (!setId) {
+        return Response.json(
+          {
+            success: false,
+            error: "Не указан ID набора цифровых копий",
+          },
+          { status: 400 }
+        );
+      }
 
-    const result = await db
-      .collection("digitalcopies")
-      .updateOne({ _id: new ObjectId(copyId) }, { $set: updateData });
+      const updateData = {};
+      if (platform !== undefined) updateData.platform = platform;
+      if (price !== undefined) updateData.price = price;
+      if (isActive !== undefined) updateData.isActive = isActive;
+      updateData.updatedAt = new Date();
 
-    if (result.matchedCount === 0) {
+      const result = await db
+        .collection("digitalcopies")
+        .updateOne({ _id: new ObjectId(setId) }, { $set: updateData });
+
+      if (result.matchedCount === 0) {
+        return Response.json(
+          {
+            success: false,
+            error: "Набор цифровых копий не найден",
+          },
+          { status: 404 }
+        );
+      }
+
+      return Response.json({
+        success: true,
+        message: "Набор цифровых копий успешно обновлен",
+      });
+    }
+
+    // Добавление новых учетных данных в набор
+    else if (operation === "add_credential") {
+      if (!setId || !credential || !credential.login || !credential.password) {
+        return Response.json(
+          {
+            success: false,
+            error: "Не все обязательные поля заполнены",
+          },
+          { status: 400 }
+        );
+      }
+
+      // Создаем новые учетные данные
+      const newCredential = {
+        login: credential.login,
+        password: credential.password,
+        isActive: credentialIsActive !== undefined ? credentialIsActive : true,
+        createdAt: new Date(),
+      };
+
+      // Добавляем учетные данные в массив
+      const result = await db.collection("digitalcopies").updateOne(
+        { _id: new ObjectId(setId) },
+        {
+          $push: { credentials: newCredential },
+          $set: { updatedAt: new Date() },
+        }
+      );
+
+      if (result.matchedCount === 0) {
+        return Response.json(
+          {
+            success: false,
+            error: "Набор цифровых копий не найден",
+          },
+          { status: 404 }
+        );
+      }
+
+      return Response.json({
+        success: true,
+        message: "Учетные данные успешно добавлены",
+      });
+    }
+
+    // Обновление статуса учетных данных
+    else if (operation === "update_credential") {
+      if (!setId || !credentialId || credentialIsActive === undefined) {
+        return Response.json(
+          {
+            success: false,
+            error: "Не все обязательные поля заполнены",
+          },
+          { status: 400 }
+        );
+      }
+
+      // Обновляем статус учетных данных по индексу
+      const result = await db.collection("digitalcopies").updateOne(
+        {
+          _id: new ObjectId(setId),
+          "credentials._id": new ObjectId(credentialId),
+        },
+        {
+          $set: {
+            "credentials.$.isActive": credentialIsActive,
+            updatedAt: new Date(),
+          },
+        }
+      );
+
+      if (result.matchedCount === 0) {
+        return Response.json(
+          {
+            success: false,
+            error: "Набор цифровых копий или учетные данные не найдены",
+          },
+          { status: 404 }
+        );
+      }
+
+      return Response.json({
+        success: true,
+        message: "Статус учетных данных успешно обновлен",
+      });
+    }
+
+    // Неизвестная операция
+    else {
       return Response.json(
         {
           success: false,
-          error: "Цифровая копия не найдена",
+          error: "Неизвестная операция",
         },
-        { status: 404 }
+        { status: 400 }
       );
     }
-
-    return Response.json({
-      success: true,
-      message: "Данные успешно обновлены",
-    });
   } catch (error) {
-    console.error("Ошибка при обновлении данных:", error);
+    console.error("Ошибка при обработке данных:", error);
     return Response.json(
       {
         success: false,
-        error: "Ошибка при обновлении данных: " + error.message,
+        error: "Ошибка при обработке данных: " + error.message,
       },
       { status: 500 }
     );
@@ -155,36 +304,99 @@ export async function DELETE(request) {
     const db = mongoose.connection.db;
 
     const data = await request.json();
-    const { copyId } = data;
+    const {
+      operation, // тип операции: 'delete_set' или 'delete_credential'
+      setId, // ID набора цифровых копий
+      credentialId, // ID учетных данных для удаления
+    } = data;
 
-    if (!copyId) {
+    // Удаление всего набора цифровых копий
+    if (operation === "delete_set") {
+      if (!setId) {
+        return Response.json(
+          {
+            success: false,
+            error: "Не указан ID набора цифровых копий",
+          },
+          { status: 400 }
+        );
+      }
+
+      const result = await db.collection("digitalcopies").deleteOne({
+        _id: new ObjectId(setId),
+      });
+
+      if (result.deletedCount === 0) {
+        return Response.json(
+          {
+            success: false,
+            error: "Набор цифровых копий не найден",
+          },
+          { status: 404 }
+        );
+      }
+
+      return Response.json({
+        success: true,
+        message: "Набор цифровых копий успешно удален",
+      });
+    }
+    // Удаление конкретных учетных данных из набора
+    else if (operation === "delete_credential") {
+      if (!setId || !credentialId) {
+        return Response.json(
+          {
+            success: false,
+            error: "Не указан ID набора или ID учетных данных",
+          },
+          { status: 400 }
+        );
+      }
+
+      // Удаляем учетные данные из массива
+      const result = await db.collection("digitalcopies").updateOne(
+        { _id: new ObjectId(setId) },
+        {
+          $pull: { credentials: { _id: new ObjectId(credentialId) } },
+          $set: { updatedAt: new Date() },
+        }
+      );
+
+      if (result.matchedCount === 0) {
+        return Response.json(
+          {
+            success: false,
+            error: "Набор цифровых копий не найден",
+          },
+          { status: 404 }
+        );
+      }
+
+      if (result.modifiedCount === 0) {
+        return Response.json(
+          {
+            success: false,
+            error: "Учетные данные не найдены или уже удалены",
+          },
+          { status: 404 }
+        );
+      }
+
+      return Response.json({
+        success: true,
+        message: "Учетные данные успешно удалены из набора",
+      });
+    }
+    // Неизвестная операция
+    else {
       return Response.json(
         {
           success: false,
-          error: "Не указан ID цифровой копии",
+          error: "Неизвестная операция удаления",
         },
         { status: 400 }
       );
     }
-
-    const result = await db.collection("digitalcopies").deleteOne({
-      _id: new ObjectId(copyId),
-    });
-
-    if (result.deletedCount === 0) {
-      return Response.json(
-        {
-          success: false,
-          error: "Цифровая копия не найдена",
-        },
-        { status: 404 }
-      );
-    }
-
-    return Response.json({
-      success: true,
-      message: "Цифровая копия успешно удалена",
-    });
   } catch (error) {
     console.error("Ошибка при удалении данных:", error);
     return Response.json(

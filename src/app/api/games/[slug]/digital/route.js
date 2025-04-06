@@ -4,12 +4,12 @@ import { ObjectId } from "mongodb";
 
 export async function GET(request, { params }) {
   try {
-    const { slug } = params;
+    const { slug } = await params;
     console.log("Получен slug:", slug);
 
     if (!slug) {
       return NextResponse.json(
-        { success: false, error: "Идентификатор игры не указан" },
+        { error: "Идентификатор игры не указан" },
         { status: 400 }
       );
     }
@@ -20,51 +20,39 @@ export async function GET(request, { params }) {
 
     // Получаем информацию об игре по slug
     const game = await db.collection("games").findOne({ slug });
-    console.log("Найдена игра:", game);
+    console.log("Найдена игра:", game._id);
 
     if (!game) {
-      return NextResponse.json(
-        { success: false, error: "Игра не найдена" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Игра не найдена" }, { status: 404 });
     }
 
-    // Получаем цифровые копии для этой игры
-    const copies = await db
+    // Получаем активные цифровые копии для этой игры
+    const digitalCopies = await db
       .collection("digitalcopies")
       .find({
-        gameId: game._id.toString(),
-        isActive: true, // Ищем только активные копии
+        gameId: game._id,
+        isActive: true, // ищем только активные наборы
       })
       .toArray();
 
-    console.log("Найдены активные цифровые копии:", copies);
+    // Форматируем данные о цифровых копиях для клиента
+    // Внимание: мы НЕ отправляем учетные данные, только информацию о наличии копий
+    const copiesFormatted = digitalCopies.map((copy) => ({
+      _id: copy._id.toString(),
+      price: copy.price,
+      platform: copy.platform,
+      // Посчитаем количество активных учетных данных
+      totalAvailable: Array.isArray(copy.credentials)
+        ? copy.credentials.filter((cred) => cred.isActive).length
+        : 0,
+    }));
 
-    // Если есть хотя бы одна копия, берем её цену и платформу
-    const price = copies.length > 0 ? copies[0].price : 0;
-    const platform =
-      copies.length > 0 ? copies[0].platform : game.platform || "PS5";
-
-    const response = {
-      success: true,
-      hasDigitalCopies: copies.length > 0,
-      price: price,
-      platform: platform,
-      totalCopies: copies.length,
-      copies: copies.map((copy) => ({
-        _id: copy._id.toString(),
-        price: copy.price,
-        platform: copy.platform,
-        isActive: copy.isActive,
-      })),
-    };
-
-    console.log("Отправляем ответ:", response);
-    return NextResponse.json(response);
+    console.log("Отправляем ответ:", copiesFormatted);
+    return NextResponse.json({ copies: copiesFormatted });
   } catch (error) {
     console.error("Ошибка при получении цифровых копий:", error);
     return NextResponse.json(
-      { success: false, error: "Ошибка сервера: " + error.message },
+      { error: "Ошибка сервера: " + error.message },
       { status: 500 }
     );
   }

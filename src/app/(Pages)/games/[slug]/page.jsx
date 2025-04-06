@@ -149,11 +149,14 @@ export default function GameDetailsPage() {
 
       {/* Основной контент */}
       <div className="container mx-auto px-4 py-8 -mt-8 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Левая колонка с описанием и характеристиками */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-7 space-y-8 order-1 lg:order-1">
             {/* Описание */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+              <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
+                Описание
+              </h2>
               <p className="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">
                 {game.description}
               </p>
@@ -161,7 +164,7 @@ export default function GameDetailsPage() {
 
             {/* Характеристики */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+              <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
                 Характеристики
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -206,18 +209,24 @@ export default function GameDetailsPage() {
           </div>
 
           {/* Правая колонка с видео и ценами */}
-          <div className="lg:col-span-1 space-y-8">
+          <div className="lg:col-span-5 space-y-8 order-2 lg:order-2">
             {/* Видео */}
-            <VideoPlayer
-              url={game.youtubeUrl}
-              title={`${game.title} - трейлер`}
-            />
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+              <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
+                Трейлер
+              </h2>
+              <VideoPlayer
+                url={game.youtubeUrl}
+                title={`${game.title} - трейлер`}
+              />
+            </div>
 
-            {/* Цены */}
-            <div className="sticky top-8">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-                <PriceList />
-              </div>
+            {/* Интегрированный компонент цен */}
+            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-gray-800 dark:to-gray-800 rounded-2xl p-6 shadow-lg border border-amber-100 dark:border-amber-900">
+              <h2 className="text-2xl font-semibold mb-4 text-amber-700 dark:text-amber-400">
+                Варианты покупки
+              </h2>
+              <PriceList />
             </div>
           </div>
         </div>
