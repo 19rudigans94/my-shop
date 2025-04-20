@@ -25,10 +25,18 @@ jobs:
       - name: Build project
         run: npm run build
         env:
+          # MongoDB
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          NEXT_PUBLIC_MONGODB_URI: ${{ secrets.NEXT_PUBLIC_MONGODB_URI }}
+
+          # Auth
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
-          NEXT_PUBLIC_MONGODB_URI: ${{ secrets.NEXT_PUBLIC_MONGODB_URI }}
+
+          # Environment
+          NODE_ENV: production
+
+          # Mail
           NEXT_SMTP_HOST: ${{ secrets.NEXT_SMTP_HOST }}
           NEXT_SMTP_PORT: ${{ secrets.NEXT_SMTP_PORT }}
           NEXT_SMTP_USER: ${{ secrets.NEXT_SMTP_USER }}
@@ -61,16 +69,23 @@ jobs:
           # Настройка автозапуска
           pm2 startup
         env:
+          # MongoDB
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          NEXT_PUBLIC_MONGODB_URI: ${{ secrets.NEXT_PUBLIC_MONGODB_URI }}
+
+          # Auth
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
-          NEXT_PUBLIC_MONGODB_URI: ${{ secrets.NEXT_PUBLIC_MONGODB_URI }}
+
+          # Environment
+          NODE_ENV: production
+
+          # Mail
           NEXT_SMTP_HOST: ${{ secrets.NEXT_SMTP_HOST }}
           NEXT_SMTP_PORT: ${{ secrets.NEXT_SMTP_PORT }}
           NEXT_SMTP_USER: ${{ secrets.NEXT_SMTP_USER }}
           NEXT_SMTP_PASSWORD: ${{ secrets.NEXT_SMTP_PASSWORD }}
           NEXT_FEEDBACK_MAIL: ${{ secrets.NEXT_FEEDBACK_MAIL }}
-          NODE_ENV: production
 
       - name: Health Check
         if: github.ref == 'refs/heads/main'
