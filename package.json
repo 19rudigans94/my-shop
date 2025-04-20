@@ -8,6 +8,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "analyze": "ANALYZE=true next build",
     "seed:games": "node src/scripts/seedGames.js",
     "seed:physical-disks": "node src/scripts/seedPhysicalDisks.js"
   },
