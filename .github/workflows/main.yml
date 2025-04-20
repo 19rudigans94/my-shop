@@ -20,6 +20,6 @@ jobs:
 
       - name: Execute deployment script on server
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@82.115.49.188 'bash -s' < ~/update-my-shop.sh
+          ssh -o StrictHostKeyChecking=no ubuntu@82.115.49.188 'bash -s' < ~/home/ubuntu/update-my-shop.sh
         env:
           PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
