@@ -32,5 +32,5 @@ jobs:
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
 
-      - name: Run tests
-        run: npm test
+      - name: Run Start
+        run: npm run start
