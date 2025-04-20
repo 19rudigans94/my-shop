@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Game from "@/models/Game";
+import PhysicalDisk from "@/models/PhysicalDisk";
 import { generateSlug } from "@/lib/utils";
 
 // Получение списка игр
@@ -39,14 +40,7 @@ export async function POST(request) {
     const data = await request.json();
 
     // Проверяем обязательные поля
-    if (
-      !data.title ||
-      !data.platforms ||
-      !data.description ||
-      !data.image ||
-      !data.releaseDate ||
-      !data.publisher
-    ) {
+    if (!data.title || !data.platforms || !data.description || !data.image) {
       throw new Error("Не все обязательные поля заполнены");
     }
 
@@ -83,11 +77,43 @@ export async function POST(request) {
     // Добавляем слаг в данные
     data.slug = slug;
 
+    // Создаем игру
     const game = await Game.create(data);
+
+    // Создаем физические диски для каждой платформы
+    const physicalDisks = await Promise.all(
+      data.platforms.map(async (platform) => {
+        try {
+          return await PhysicalDisk.create({
+            gameId: game._id,
+            platform,
+            variants: [
+              {
+                condition: "new",
+                stock: 0,
+                price: 0,
+              },
+            ],
+          });
+        } catch (error) {
+          // Если произошла ошибка при создании физического диска,
+          // пропускаем его и продолжаем с другими
+          console.error(
+            `Ошибка при создании физического диска для ${platform}:`,
+            error
+          );
+          return null;
+        }
+      })
+    );
+
+    // Фильтруем успешно созданные физические диски
+    const successfulDisks = physicalDisks.filter((disk) => disk !== null);
 
     return NextResponse.json({
       success: true,
       game,
+      physicalDisks: successfulDisks,
     });
   } catch (error) {
     console.error("Ошибка при создании игры:", error);

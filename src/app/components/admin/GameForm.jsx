@@ -41,22 +41,52 @@ export default function GameForm({ game, onSubmit, onCancel }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    // Добавляем валидацию и логирование
+    console.log("Отправка формы:", formData);
+
+    // Проверяем все обязательные поля
+    const requiredFields = {
+      title: "Название",
+      description: "Описание",
+      image: "URL изображения",
+      youtubeUrl: "URL YouTube видео",
+    };
+
+    const emptyFields = Object.entries(requiredFields)
+      .filter(([key]) => !formData[key])
+      .map(([_, label]) => label);
+
+    if (emptyFields.length > 0) {
+      alert(`Пожалуйста, заполните следующие поля: ${emptyFields.join(", ")}`);
+      return;
+    }
+
     // Конвертируем YouTube URL в формат для встраивания
     const youtubeUrl = formData.youtubeUrl;
     let embedUrl = youtubeUrl;
 
-    if (youtubeUrl.includes("youtube.com/watch?v=")) {
-      const videoId = youtubeUrl.split("v=")[1].split("&")[0];
-      embedUrl = `https://www.youtube.com/embed/${videoId}`;
-    } else if (youtubeUrl.includes("youtu.be/")) {
-      const videoId = youtubeUrl.split("youtu.be/")[1];
-      embedUrl = `https://www.youtube.com/embed/${videoId}`;
-    }
+    try {
+      if (youtubeUrl.includes("youtube.com/watch?v=")) {
+        const videoId = youtubeUrl.split("v=")[1].split("&")[0];
+        embedUrl = `https://www.youtube.com/embed/${videoId}`;
+      } else if (youtubeUrl.includes("youtu.be/")) {
+        const videoId = youtubeUrl.split("youtu.be/")[1];
+        embedUrl = `https://www.youtube.com/embed/${videoId}`;
+      }
 
-    onSubmit({
-      ...formData,
-      youtubeUrl: embedUrl,
-    });
+      const submitData = {
+        ...formData,
+        youtubeUrl: embedUrl,
+      };
+
+      console.log("Отправляем данные:", submitData);
+      onSubmit(submitData);
+    } catch (error) {
+      console.error("Ошибка при обработке формы:", error);
+      alert(
+        "Произошла ошибка при обработке формы. Проверьте правильность заполнения полей."
+      );
+    }
   };
 
   const handleFeatureAdd = () => {
