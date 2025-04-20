@@ -7,11 +7,6 @@ const nextConfig = {
     // formats: ["image/avif", "image/webp"],
     unoptimized: true,
   },
-
-  experimental: {
-    optimizeCss: true,
-    optimizePackageImports: ["@headlessui/react", "lucide-react"],
-  },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
