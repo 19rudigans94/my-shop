@@ -1,14 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Устанавливаем стартовую страницу проекта
+  redirects: async () => {
+    return [
+      {
+        source: "/",
+        destination: "/games",
+        permanent: true,
+      },
+    ];
+  },
+  // Отключаем оптимизацию изображений
   images: {
-    remotePatterns: [
-      {
-        hostname: "images.unsplash.com",
-      },
-      {
-        hostname: "plus.unsplash.com",
-      },
-    ],
+    unoptimized: true,
   },
 };
 
