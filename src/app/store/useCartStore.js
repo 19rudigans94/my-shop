@@ -12,84 +12,143 @@ const useCartStore = create(
 
       // Добавление товара в корзину
       addItem: (item) => {
-        const { items } = get();
-        const existingItem = items.find((i) => i.id === item._id);
+        try {
+          if (!item || typeof item !== "object") {
+            throw new Error("Неверный формат товара");
+          }
 
-        if (existingItem) {
-          // Если товар уже есть в корзине, увеличиваем количество
-          set({
-            items: items.map((i) =>
-              i.id === item._id ? { ...i, quantity: i.quantity + 1 } : i
-            ),
-          });
-        } else {
-          // Если товара нет в корзине, добавляем его
-          set({
-            items: [
-              ...items,
-              {
-                id: item._id,
-                title: item.title,
-                price: item.price,
-                image: item.image,
-                platform: item.platform || item.platforms?.[0] || "Не указана",
-                quantity: 1,
-                type: item.slug
-                  ? "accessory"
-                  : item.platforms
-                  ? "game"
-                  : "console",
-                slug: item.slug,
-              },
-            ],
-          });
+          const { items } = get();
+          // Ищем элемент с учетом состояния (новый/б/у)
+          const existingItem = items.find(
+            (i) =>
+              i.id === item._id &&
+              i.condition === (item.condition || "new") &&
+              i.variant === (item.variant || "physical")
+          );
+
+          if (existingItem) {
+            // Если товар уже есть в корзине, увеличиваем количество
+            set({
+              items: items.map((i) =>
+                i.id === item._id &&
+                i.condition === (item.condition || "new") &&
+                i.variant === (item.variant || "physical")
+                  ? { ...i, quantity: i.quantity + 1 }
+                  : i
+              ),
+            });
+          } else {
+            // Если товара нет в корзине, добавляем его
+            const newItem = {
+              id: item._id,
+              title: item.title || "Без названия",
+              price: Number(item.price) || 0,
+              image: item.image || "/images/placeholder.svg",
+              platform: item.platform || "Не указана",
+              quantity: 1,
+              type: item.type || "game",
+              variant: item.variant || "physical",
+              condition: item.condition || "new",
+            };
+
+            set({
+              items: [...items, newItem],
+            });
+          }
+        } catch (error) {
+          console.error("Ошибка при добавлении товара в корзину:", error);
         }
       },
 
       // Удаление товара из корзины
-      removeItem: (itemId) => {
-        const { items } = get();
-        set({
-          items: items.filter((item) => item.id !== itemId),
-        });
+      removeItem: (itemId, condition, variant) => {
+        try {
+          const { items } = get();
+          set({
+            items: items.filter(
+              (item) =>
+                !(
+                  item.id === itemId &&
+                  item.condition === condition &&
+                  item.variant === variant
+                )
+            ),
+          });
+        } catch (error) {
+          console.error("Ошибка при удалении товара из корзины:", error);
+        }
       },
 
       // Обновление количества товара
-      updateQuantity: (itemId, quantity) => {
-        const { items } = get();
-        if (quantity <= 0) {
-          // Если количество 0 или меньше, удаляем товар
-          set({
-            items: items.filter((item) => item.id !== itemId),
-          });
-        } else {
-          // Иначе обновляем количество
-          set({
-            items: items.map((item) =>
-              item.id === itemId ? { ...item, quantity } : item
-            ),
-          });
+      updateQuantity: (itemId, quantity, condition, variant) => {
+        try {
+          const { items } = get();
+          const newQuantity = Math.max(0, Number(quantity) || 0);
+
+          if (newQuantity <= 0) {
+            // Если количество 0 или меньше, удаляем товар
+            set({
+              items: items.filter(
+                (item) =>
+                  !(
+                    item.id === itemId &&
+                    item.condition === condition &&
+                    item.variant === variant
+                  )
+              ),
+            });
+          } else {
+            // Иначе обновляем количество
+            set({
+              items: items.map((item) =>
+                item.id === itemId &&
+                item.condition === condition &&
+                item.variant === variant
+                  ? { ...item, quantity: newQuantity }
+                  : item
+              ),
+            });
+          }
+        } catch (error) {
+          console.error("Ошибка при обновлении количества товара:", error);
         }
       },
 
       // Очистка корзины
       clearCart: () => {
-        set({ items: [] });
+        try {
+          set({ items: [] });
+        } catch (error) {
+          console.error("Ошибка при очистке корзины:", error);
+        }
       },
 
       // Получение общего количества товаров
       getTotalItems: () => {
-        const { items } = get();
-        return items.reduce((total, item) => total + item.quantity, 0);
+        try {
+          const { items } = get();
+          return items.reduce((total, item) => total + (item.quantity || 0), 0);
+        } catch (error) {
+          console.error(
+            "Ошибка при подсчете общего количества товаров:",
+            error
+          );
+          return 0;
+        }
       },
 
       // Получение общей стоимости
       getTotalPrice: () => {
-        const { items } = get();
-        return items.reduce(
-          (total, item) => total + item.price * item.quantity,
-          0
-        );
+        try {
+          const { items } = get();
+          return items.reduce(
+            (total, item) => total + (item.price || 0) * (item.quantity || 0),
+            0
+          );
+        } catch (error) {
+          console.error("Ошибка при подсчете общей стоимости:", error);
+          return 0;
+        }
       },
     }),
     {
@@ -106,6 +165,35 @@ const useCartStore = create(
           removeItem: () => {},
         };
       }),
+      onRehydrateStorage: () => (state) => {
+        // Проверка и валидация данных после восстановления из localStorage
+        if (state) {
+          try {
+            if (!Array.isArray(state.items)) {
+              state.items = [];
+            }
+            // Очистка некорректных данных и добавление изображения по умолчанию
+            state.items = state.items
+              .filter(
+                (item) =>
+                  item &&
+                  typeof item === "object" &&
+                  item.id &&
+                  typeof item.quantity === "number" &&
+                  item.quantity > 0
+              )
+              .map((item) => ({
+                ...item,
+                image: item.image || "/images/placeholder.svg",
+                condition: item.condition || "new",
+                variant: item.variant || "physical",
+              }));
+          } catch (error) {
+            console.error("Ошибка при восстановлении данных корзины:", error);
+            state.items = [];
+          }
+        }
+      },
     }
   )
 );

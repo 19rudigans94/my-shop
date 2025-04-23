@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { ShoppingCart } from "lucide-react";
 import { useParams } from "next/navigation";
-// import { useCartStore } from "@/app/store/useCartStore";
+import useCartStore from "@/app/store/useCartStore";
 
 export default function PriceList() {
   const params = useParams();
@@ -13,7 +13,7 @@ export default function PriceList() {
   const [error, setError] = useState(null);
   const [selectedPlatform, setSelectedPlatform] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
-  // const addToCart = useCartStore((state) => state.addToCart);
+  const addToCart = useCartStore((state) => state.addItem);
 
   useEffect(() => {
     const fetchPrices = async () => {
@@ -107,13 +107,32 @@ export default function PriceList() {
   };
 
   const handleAddToCart = () => {
-    // Реализация добавления физических копий в корзину
-    console.log("addToCart");
+    if (!selectedVariant) return;
+
+    const item = {
+      _id: selectedVariant._id,
+      title: params.slug,
+      price: selectedVariant.price,
+      platform: selectedPlatform,
+      condition: selectedVariant.condition,
+      type: "game",
+      variant: "physical",
+    };
+
+    addToCart(item);
   };
 
-  const handleAddDigitalToCart = () => {
-    // Реализация добавления цифровой копии в корзину
-    console.log("addDigitalToCart");
+  const handleAddDigitalToCart = (copy) => {
+    const item = {
+      _id: copy._id,
+      title: params.slug,
+      price: copy.price,
+      platform: copy.platform,
+      type: "game",
+      variant: "digital",
+    };
+
+    addToCart(item);
   };
 
   if (loading) {
@@ -287,7 +306,7 @@ export default function PriceList() {
                       </div>
                     </div>
                     <button
-                      onClick={handleAddDigitalToCart}
+                      onClick={() => handleAddDigitalToCart(copy)}
                       className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white py-2 px-4 rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all duration-300 font-medium flex items-center justify-center gap-2 text-sm"
                     >
                       <ShoppingCart className="w-4 h-4" />

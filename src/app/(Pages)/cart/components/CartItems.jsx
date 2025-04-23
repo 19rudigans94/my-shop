@@ -18,15 +18,15 @@ export default function CartItems() {
   }, [items]);
 
   // Обработчик изменения количества
-  const handleQuantityChange = (itemId, newQuantity) => {
+  const handleQuantityChange = (itemId, newQuantity, condition, variant) => {
     setIsUpdating(true);
-    updateQuantity(itemId, newQuantity);
+    updateQuantity(itemId, newQuantity, condition, variant);
     setTimeout(() => setIsUpdating(false), 300);
   };
 
   // Обработчик удаления товара
-  const handleRemoveItem = (itemId) => {
-    removeItem(itemId);
+  const handleRemoveItem = (itemId, condition, variant) => {
+    removeItem(itemId, condition, variant);
   };
 
   // Получение ссылки на страницу товара
@@ -43,9 +43,28 @@ export default function CartItems() {
     }
   };
 
+  // Получение отображаемого состояния товара
+  const getConditionLabel = (condition) => {
+    switch (condition) {
+      case "new":
+        return "Новый";
+      case "used":
+        return "Б/У";
+      default:
+        return "";
+    }
+  };
+
+  // Создание уникального ключа для товара
+  const getItemKey = (item) => {
+    return `${item.id}_${item.condition || "new"}_${
+      item.variant || "physical"
+    }`;
+  };
+
   return (
     <div
-      className=" bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
+      className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
       suppressHydrationWarning
     >
       <div className="p-6">
@@ -62,7 +81,7 @@ export default function CartItems() {
           <div className="space-y-4">
             {cartItems.map((item) => (
               <div
-                key={item.id}
+                key={getItemKey(item)}
                 className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border-b border-gray-200 dark:border-gray-700 last:border-0"
               >
                 <Link href={getItemLink(item)} className="flex-shrink-0">
@@ -83,6 +102,30 @@ export default function CartItems() {
                     {item.title}
                   </Link>
 
+                  <div className="flex flex-wrap gap-2 mt-1 mb-1">
+                    {item.platform && (
+                      <span className="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs rounded-full text-gray-800 dark:text-gray-200">
+                        {item.platform}
+                      </span>
+                    )}
+                    {item.condition && (
+                      <span
+                        className={`inline-block px-2 py-1 text-xs rounded-full ${
+                          item.condition === "new"
+                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                            : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                        }`}
+                      >
+                        {getConditionLabel(item.condition)}
+                      </span>
+                    )}
+                    {item.variant === "digital" && (
+                      <span className="inline-block px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-xs rounded-full text-amber-800 dark:text-amber-400">
+                        Цифровая копия
+                      </span>
+                    )}
+                  </div>
+
                   <p className="text-lg font-semibold text-gray-900 dark:text-white mt-1">
                     {item.price.toLocaleString()} ₸
                   </p>
@@ -90,7 +133,12 @@ export default function CartItems() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() =>
-                      handleQuantityChange(item.id, item.quantity - 1)
+                      handleQuantityChange(
+                        item.id,
+                        item.quantity - 1,
+                        item.condition,
+                        item.variant
+                      )
                     }
                     disabled={isUpdating || item.quantity <= 1}
                     className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -100,7 +148,12 @@ export default function CartItems() {
                   <span className="w-8 text-center">{item.quantity}</span>
                   <button
                     onClick={() =>
-                      handleQuantityChange(item.id, item.quantity + 1)
+                      handleQuantityChange(
+                        item.id,
+                        item.quantity + 1,
+                        item.condition,
+                        item.variant
+                      )
                     }
                     disabled={isUpdating}
                     className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
@@ -109,7 +162,9 @@ export default function CartItems() {
                   </button>
                 </div>
                 <button
-                  onClick={() => handleRemoveItem(item.id)}
+                  onClick={() =>
+                    handleRemoveItem(item.id, item.condition, item.variant)
+                  }
                   className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                 >
                   <svg
