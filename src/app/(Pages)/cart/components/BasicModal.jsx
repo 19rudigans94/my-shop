@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, CreditCard, Check } from "lucide-react";
+import useCartStore from "@/app/store/useCartStore";
 
 export default function BasicModal({ isOpen, closeModal, total, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -16,6 +17,10 @@ export default function BasicModal({ isOpen, closeModal, total, onSuccess }) {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  // Получаем данные корзины из store
+  const cartItems = useCartStore((state) => state.items);
+  const getTotalItems = useCartStore((state) => state.getTotalItems);
 
   // Закрытие по нажатию Escape
   useEffect(() => {
@@ -111,8 +116,47 @@ export default function BasicModal({ isOpen, closeModal, total, onSuccess }) {
     setIsSubmitting(true);
 
     try {
-      // Имитация отправки данных на сервер
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Подготавливаем данные для отправки
+      const orderData = {
+        customer: {
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email,
+        },
+        payment: {
+          cardNumber: formData.cardNumber,
+          cardHolder: formData.cardHolder,
+          expiry: formData.expiry,
+          cvv: formData.cvv,
+        },
+        order: {
+          items: cartItems.map((item) => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            total: item.price * item.quantity,
+          })),
+          totalItems: getTotalItems(),
+          totalAmount: total,
+        },
+        timestamp: new Date().toISOString(),
+      };
+
+      // Отправляем данные в API
+      const response = await fetch("/api/payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Ошибка при оформлении заказа");
+      }
 
       // Успешное оформление заказа
       setIsSuccess(true);
@@ -140,7 +184,9 @@ export default function BasicModal({ isOpen, closeModal, total, onSuccess }) {
     } catch (error) {
       console.error("Ошибка при оформлении заказа:", error);
       setErrors({
-        submit: "Произошла ошибка при оформлении заказа. Попробуйте позже.",
+        submit:
+          error.message ||
+          "Произошла ошибка при оформлении заказа. Попробуйте позже.",
       });
     } finally {
       setIsSubmitting(false);
@@ -150,7 +196,9 @@ export default function BasicModal({ isOpen, closeModal, total, onSuccess }) {
   // Обработчик клика по оверлею
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget && !isSubmitting) {
-      closeModal();
+      setTimeout(() => {
+        closeModal();
+      }, 9000);
     }
   };
 
