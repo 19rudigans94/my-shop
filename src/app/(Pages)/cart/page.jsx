@@ -32,6 +32,7 @@ export default function CartPage() {
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">
         Корзина
       </h1>
+
       {!mounted ? (
         <div className="text-center py-12">
           <p className="text-gray-500 dark:text-gray-400">

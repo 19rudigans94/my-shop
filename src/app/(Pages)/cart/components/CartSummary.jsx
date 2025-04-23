@@ -1,91 +1,88 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { ShoppingBag } from "lucide-react";
 import useCartStore from "@/app/store/useCartStore";
+import BasicModal from "./BasicModal";
 
 export default function CartSummary() {
-  const { items, getTotalItems, getTotalPrice, clearCart } = useCartStore();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [totalItems, setTotalItems] = useState(0);
-  const [totalPrice, setTotalPrice] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const getTotalPrice = useCartStore((state) => state.getTotalPrice);
+  const getTotalItems = useCartStore((state) => state.getTotalItems);
+  const clearCart = useCartStore((state) => state.clearCart);
 
-  // Обновляем состояние только на клиенте после монтирования
-  useEffect(() => {
-    setMounted(true);
-    setTotalItems(getTotalItems());
-    setTotalPrice(getTotalPrice());
-  }, [getTotalItems, getTotalPrice, items]);
-
-  // Обработчик оформления заказа
   const handleCheckout = () => {
-    setIsProcessing(true);
-    // Здесь будет логика оформления заказа
-    setTimeout(() => {
-      setIsProcessing(false);
-      alert("Заказ успешно оформлен!");
-      clearCart();
-    }, 1500);
+    setIsModalOpen(true);
   };
 
-  // Форматирование цены
-  const formatPrice = (price) => {
-    return price.toLocaleString("ru-RU", {
-      style: "decimal",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    });
+  const closeModal = () => {
+    setIsModalOpen(false);
   };
+
+  const handleOrderSuccess = () => {
+    // Очистка корзины при успешном оформлении заказа
+    clearCart();
+    closeModal();
+  };
+
+  const totalPrice = getTotalPrice();
+  const totalItems = getTotalItems();
 
   return (
-    <div
-      className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
-      suppressHydrationWarning
-    >
-      <div className="p-6">
+    <>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden p-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
           Итого
         </h2>
-        <div className="space-y-4">
-          <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">
-              Товары ({mounted ? totalItems : 0})
-            </span>
-            <span className="text-gray-900 dark:text-white">
-              {mounted ? formatPrice(totalPrice) : "0"} ₸
-            </span>
+
+        <div className="space-y-3 mb-6">
+          <div className="flex justify-between text-gray-600 dark:text-gray-400">
+            <span>Товары ({totalItems})</span>
+            <span>{totalPrice.toLocaleString()} ₸</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">Доставка</span>
-            <span className="text-gray-900 dark:text-white">Бесплатно</span>
+
+          <div className="flex justify-between text-gray-600 dark:text-gray-400">
+            <span>Доставка</span>
+            <span>Бесплатно</span>
           </div>
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-            <div className="flex justify-between">
-              <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                Итого к оплате
-              </span>
-              <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                {mounted ? formatPrice(totalPrice) : "0"} ₸
+
+          <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-3 mt-3">
+            <div className="flex justify-between font-semibold text-lg text-gray-900 dark:text-white">
+              <span>Итого к оплате</span>
+              <span className="text-amber-600 dark:text-amber-400">
+                {totalPrice.toLocaleString()} ₸
               </span>
             </div>
           </div>
-          <button
-            onClick={handleCheckout}
-            disabled={isProcessing || !mounted || totalItems === 0}
-            className="w-full py-3 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isProcessing ? "Оформление..." : "Оформить заказ"}
-          </button>
-          {mounted && totalItems > 0 && (
-            <button
-              onClick={clearCart}
-              className="w-full py-2 px-4 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
-            >
-              Очистить корзину
-            </button>
-          )}
         </div>
+
+        <button
+          onClick={handleCheckout}
+          disabled={totalItems === 0}
+          className={`w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center transition-all ${
+            totalItems === 0
+              ? "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+              : "bg-amber-500 text-white hover:bg-amber-600"
+          }`}
+        >
+          <ShoppingBag className="w-5 h-5 mr-2" />
+          Оформить заказ
+        </button>
+
+        {totalItems > 0 && (
+          <p className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center">
+            Нажимая кнопку «Оформить заказ», вы соглашаетесь с условиями
+            публичной оферты
+          </p>
+        )}
       </div>
-    </div>
+
+      <BasicModal
+        isOpen={isModalOpen}
+        closeModal={closeModal}
+        total={totalPrice}
+        onSuccess={handleOrderSuccess}
+      />
+    </>
   );
 }
