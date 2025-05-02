@@ -11,4 +11,8 @@ export const navigationConfig = [
     href: "/contact/agreement",
     text: "Пользовательское соглашение",
   },
+  {
+    href: "/contact/offer",
+    text: "Договор оферты",
+  },
 ];
