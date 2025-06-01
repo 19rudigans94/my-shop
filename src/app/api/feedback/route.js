@@ -72,6 +72,9 @@ export async function POST(request) {
       host: process.env.NEXT_SMTP_HOST,
       port: Number(process.env.NEXT_SMTP_PORT),
       secure: true,
+      tls: {
+        rejectUnauthorized: false,
+      },
       auth: {
         user: process.env.NEXT_SMTP_USER,
         pass: process.env.NEXT_SMTP_PASSWORD,

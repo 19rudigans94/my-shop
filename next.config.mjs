@@ -1,10 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Удалено дублирование конфигурации images, так как она определена ниже
   reactStrictMode: true,
   images: {
-    // domains: ["goldgames.kz/"],
-    // formats: ["image/avif", "image/webp"],
     unoptimized: true,
   },
   compiler: {
