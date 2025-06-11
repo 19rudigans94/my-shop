@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import useCartStore from "@/app/store/useCartStore";
 
 export default function CartItems() {
@@ -27,20 +26,6 @@ export default function CartItems() {
   // Обработчик удаления товара
   const handleRemoveItem = (itemId, condition, variant) => {
     removeItem(itemId, condition, variant);
-  };
-
-  // Получение ссылки на страницу товара
-  const getItemLink = (item) => {
-    switch (item.type) {
-      case "game":
-        return `/games/${item.slug}`;
-      case "console":
-        return `/consoles/${item.slug}`;
-      case "accessory":
-        return `/accessories/${item.slug}`;
-      default:
-        return "#";
-    }
   };
 
   // Получение отображаемого состояния товара
@@ -84,7 +69,7 @@ export default function CartItems() {
                 key={getItemKey(item)}
                 className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border-b border-gray-200 dark:border-gray-700 last:border-0"
               >
-                <Link href={getItemLink(item)} className="flex-shrink-0">
+                <div className="flex-shrink-0">
                   <div className="relative w-20 h-20 rounded-md overflow-hidden">
                     <Image
                       src={item.image}
@@ -93,14 +78,11 @@ export default function CartItems() {
                       className="object-cover"
                     />
                   </div>
-                </Link>
+                </div>
                 <div className="flex-grow">
-                  <Link
-                    href={getItemLink(item)}
-                    className="text-lg font-medium text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400"
-                  >
+                  <div className="text-lg font-medium text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400">
                     {item.title}
-                  </Link>
+                  </div>
 
                   <div className="flex flex-wrap gap-2 mt-1 mb-1">
                     {item.platform && (

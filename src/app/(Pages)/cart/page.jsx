@@ -13,7 +13,7 @@ export default function CartPage() {
 
   // Устанавливаем метаданные для страницы
   useEffect(() => {
-    document.title = "Корзина | GoldGames";
+    document.title = "Корзина";
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
       metaDescription.setAttribute("content", "Корзина с выбранными товарами");

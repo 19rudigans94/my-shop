@@ -1,12 +1,5 @@
 import nodemailer from "nodemailer";
 
-// Mail
-// NEXT_SMTP_HOST=goldgames.kz
-// NEXT_SMTP_PORT=465
-// NEXT_SMTP_USER=support@goldgames.kz
-// NEXT_SMTP_PASSWORD=Robert210814!
-// NEXT_FEEDBACK_MAIL=support@goldgames.kz
-
 const transporter = nodemailer.createTransport({
   host: process.env.NEXT_SMTP_HOST,
   port: process.env.NEXT_SMTP_PORT,
