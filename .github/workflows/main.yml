@@ -18,9 +18,10 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Copy deploy script to server
-        run: |
-          scp -o StrictHostKeyChecking=no ./scripts/update-my-shop.sh ubuntu@82.115.49.188:/home/ubuntu/update-my-shop.sh
+          #  Нужен только при первом деплое, после этого можно удалить
+      # - name: Copy deploy script to server
+      #   run: |
+      #     scp -o StrictHostKeyChecking=no ./scripts/update-my-shop.sh ubuntu@82.115.49.188:/home/ubuntu/update-my-shop.sh
 
       - name: Run deploy script on server
         run: |
