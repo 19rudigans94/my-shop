@@ -1,10 +1,218 @@
 @import "tailwindcss";
 
-/* Анимации для модального окна */
+/* Кастомные CSS переменные */
+:root {
+  /* Основные цвета бренда */
+  --color-primary: #eab308; /* yellow-500 */
+  --color-primary-dark: #ca8a04; /* yellow-600 */
+  --color-primary-light: #fbbf24; /* yellow-400 */
+
+  /* Цвета фона */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f9fafb; /* gray-50 */
+  --color-bg-tertiary: #f3f4f6; /* gray-100 */
+
+  /* Цвета текста */
+  --color-text-primary: #111827; /* gray-900 */
+  --color-text-secondary: #4b5563; /* gray-600 */
+  --color-text-tertiary: #6b7280; /* gray-500 */
+
+  /* Цвета границ */
+  --color-border-primary: #e5e7eb; /* gray-200 */
+  --color-border-secondary: #d1d5db; /* gray-300 */
+
+  /* Тени */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-yellow: 0 4px 14px 0 rgb(234 179 8 / 0.2);
+
+  /* Радиусы скругления */
+  --radius-sm: 0.125rem; /* 2px */
+  --radius-md: 0.375rem; /* 6px */
+  --radius-lg: 0.5rem; /* 8px */
+  --radius-xl: 0.75rem; /* 12px */
+
+  /* Переходы */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Темная тема */
+.dark {
+  --color-bg-primary: #111827; /* gray-900 */
+  --color-bg-secondary: #1f2937; /* gray-800 */
+  --color-bg-tertiary: #374151; /* gray-700 */
+
+  --color-text-primary: #f9fafb; /* gray-50 */
+  --color-text-secondary: #d1d5db; /* gray-300 */
+  --color-text-tertiary: #9ca3af; /* gray-400 */
+
+  --color-border-primary: #374151; /* gray-700 */
+  --color-border-secondary: #4b5563; /* gray-600 */
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4),
+    0 4px 6px -4px rgb(0 0 0 / 0.4);
+  --shadow-yellow: 0 4px 14px 0 rgb(234 179 8 / 0.3);
+}
+
+/* Базовые стили */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  transition: background-color var(--transition-normal),
+    color var(--transition-normal);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  font-variant-ligatures: contextual;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Улучшенная типографика */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--color-text-primary);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+h1 {
+  font-size: 2.25rem;
+} /* 36px */
+h2 {
+  font-size: 1.875rem;
+} /* 30px */
+h3 {
+  font-size: 1.5rem;
+} /* 24px */
+h4 {
+  font-size: 1.25rem;
+} /* 20px */
+h5 {
+  font-size: 1.125rem;
+} /* 18px */
+h6 {
+  font-size: 1rem;
+} /* 16px */
+
+p {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+/* Ссылки */
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--color-primary-dark);
+}
+
+a:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Кнопки */
+button {
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Формы */
+input,
+textarea,
+select {
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Кастомный скроллбар */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-secondary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+/* Firefox скроллбар */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-secondary) var(--color-bg-secondary);
+}
+
+/* Утилитарные классы */
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-pretty {
+  text-wrap: pretty;
+}
+
+/* Анимации */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -12,21 +220,225 @@
   }
 }
 
-@keyframes scaleIn {
-  0% {
-    transform: scale(0.8);
+@keyframes slideInRight {
+  from {
     opacity: 0;
+    transform: translateX(20px);
   }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%,
   100% {
-    transform: scale(1);
     opacity: 1;
   }
+  50% {
+    opacity: 0.5;
+  }
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-out forwards;
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
 }
 
-.animate-scaleIn {
-  animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+/* Утилитарные классы для анимации */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.4s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+/* Стили для изображений */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Стили для модальных окон */
+.modal-overlay {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Стили для карточек */
+.card {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.card-gaming {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-gaming::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(234, 179, 8, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.card-gaming:hover::before {
+  left: 100%;
+}
+
+/* Стили для кнопок */
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-yellow);
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px 0 rgb(234 179 8 / 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Стили для загрузчиков */
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-border-primary);
+  border-top: 2px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Улучшенная доступность */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Высокий контраст для доступности */
+@media (prefers-contrast: high) {
+  :root {
+    --color-primary: #000000;
+    --color-text-primary: #000000;
+    --color-bg-primary: #ffffff;
+  }
+
+  .dark {
+    --color-primary: #ffffff;
+    --color-text-primary: #ffffff;
+    --color-bg-primary: #000000;
+  }
+}
+
+/* Стили для фокуса */
+.focus-ring {
+  outline: none;
+}
+
+.focus-ring:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Стили для градиентов */
+.gradient-yellow {
+  background: linear-gradient(135deg, #fbbf24 0%, #eab308 100%);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #fbbf24 0%, #eab308 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Стили для игровых элементов */
+.gaming-glow {
+  box-shadow: 0 0 20px rgba(234, 179, 8, 0.3);
+}
+
+.dark .gaming-glow {
+  box-shadow: 0 0 30px rgba(234, 179, 8, 0.4);
+}
+
+/* Стили для печати */
+@media print {
+  * {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  a,
+  a:visited {
+    text-decoration: underline;
+  }
+
+  @page {
+    margin: 0.5in;
+  }
 }
