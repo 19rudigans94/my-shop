@@ -1,18 +1,61 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, AlertCircle, CheckCircle, X } from "lucide-react";
 import useCartStore from "@/app/store/useCartStore";
 import BasicModal from "./BasicModal";
+import createPayLinkProduct from "../../../../../pay";
 
 export default function CartSummary() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [notification, setNotification] = useState(null);
+  const [isPayLinkLoading, setIsPayLinkLoading] = useState(false);
+
   const getTotalPrice = useCartStore((state) => state.getTotalPrice);
   const getTotalItems = useCartStore((state) => state.getTotalItems);
   const clearCart = useCartStore((state) => state.clearCart);
 
   const handleCheckout = () => {
     setIsModalOpen(true);
+  };
+
+  const showNotification = (message, type = "error") => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 5000);
+  };
+
+  const handlePayLinkCheckout = async () => {
+    if (totalItems === 0) {
+      showNotification("Корзина пуста", "error");
+      return;
+    }
+
+    setIsPayLinkLoading(true);
+    try {
+      const result = await createPayLinkProduct({
+        totalPrice,
+        totalItems,
+        items: useCartStore.getState().items,
+      });
+
+      if (result?.pay_url) {
+        showNotification("Перенаправление на страницу оплаты...", "success");
+        setTimeout(() => {
+          window.location.href = result.pay_url;
+        }, 1000);
+      } else {
+        throw new Error("Не удалось получить ссылку для оплаты");
+      }
+    } catch (error) {
+      console.error("Ошибка при создании ссылки оплаты:", error);
+      showNotification(
+        error.message ||
+          "Произошла ошибка при создании ссылки оплаты. Попробуйте еще раз.",
+        "error"
+      );
+    } finally {
+      setIsPayLinkLoading(false);
+    }
   };
 
   const closeModal = () => {
@@ -56,18 +99,29 @@ export default function CartSummary() {
           </div>
         </div>
 
-        <button
-          onClick={handleCheckout}
-          disabled={totalItems === 0}
-          className={`w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center transition-all ${
-            totalItems === 0
-              ? "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-              : "bg-amber-500 text-white hover:bg-amber-600"
-          }`}
-        >
-          <ShoppingBag className="w-5 h-5 mr-2" />
-          Оформить заказ
-        </button>
+        <div className="space-y-3">
+          <button
+            onClick={handlePayLinkCheckout}
+            disabled={totalItems === 0 || isPayLinkLoading}
+            className={`w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center transition-all ${
+              totalItems === 0 || isPayLinkLoading
+                ? "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                : "bg-amber-500 text-white hover:bg-amber-600"
+            }`}
+          >
+            {isPayLinkLoading ? (
+              <>
+                <div className="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Создание ссылки...
+              </>
+            ) : (
+              <>
+                <ShoppingBag className="w-5 h-5 mr-2" />
+                Быстрая оплата (PayLink)
+              </>
+            )}
+          </button>
+        </div>
 
         {totalItems > 0 && (
           <p className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center">
@@ -83,6 +137,50 @@ export default function CartSummary() {
         total={totalPrice}
         onSuccess={handleOrderSuccess}
       />
+
+      {/* Компонент уведомлений */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 max-w-sm w-full">
+          <div
+            className={`p-4 rounded-lg shadow-lg flex items-center space-x-3 ${
+              notification.type === "success"
+                ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
+                : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+            }`}
+          >
+            {notification.type === "success" ? (
+              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+            )}
+            <p
+              className={`text-sm font-medium ${
+                notification.type === "success"
+                  ? "text-green-800 dark:text-green-200"
+                  : "text-red-800 dark:text-red-200"
+              }`}
+            >
+              {notification.message}
+            </p>
+            <button
+              onClick={() => setNotification(null)}
+              className={`p-1 rounded-full hover:bg-opacity-20 ${
+                notification.type === "success"
+                  ? "hover:bg-green-600"
+                  : "hover:bg-red-600"
+              }`}
+            >
+              <X
+                className={`w-4 h-4 ${
+                  notification.type === "success"
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-red-600 dark:text-red-400"
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
