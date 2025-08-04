@@ -1,21 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
+/**
+ * Обрабатывает GET-запрос после оплаты через Paylink.kz.
+ * Пример запроса: /api/paylink/verification?status=successful&uid=...&token=...
+ */
 export async function GET(request) {
-  const { searchParams } = new URL(req.url);
+  const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const uid = searchParams.get("uid");
   const token = searchParams.get("token");
 
   if (status === "successful") {
-    // 1. Найти заказ по uid или token
-    // 2. Обновить статус в БД
-    // 3. Вернуть успешный ответ или редирект
-    console.log(`Оплата успешна. UID: ${uid}`);
+    console.log(`✅ Оплата прошла успешно. UID: ${uid}, Token: ${token}`);
 
-    // Можно перенаправить пользователя на страницу успеха
+    // Здесь можно вызвать свою функцию для обновления заказа в базе
+    // await markOrderAsPaid(uid, token);
+
     return NextResponse.redirect(new URL("/success", request.url));
   }
 
-  // Иначе ошибка или отмена
-  return NextResponse.redirect(new URL("/failed", req.url));
+  console.log(`❌ Оплата не прошла. UID: ${uid}, Token: ${token}`);
+  return NextResponse.redirect(new URL("/failed", request.url));
 }
