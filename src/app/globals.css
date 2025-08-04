@@ -394,14 +394,14 @@ img {
 }
 
 /* Стили для фокуса */
-.focus-ring {
+/* .focus-ring {
   outline: none;
 }
 
 .focus-ring:focus {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
-}
+} */
 
 /* Стили для градиентов */
 .gradient-yellow {
