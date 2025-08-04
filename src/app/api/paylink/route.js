@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTimePlus30Minutes } from "../../utils/lifeTime";
 
 /**
  * Серверный API маршрут для создания продуктов в PayLink.kz
@@ -11,7 +12,7 @@ import { NextResponse } from "next/server";
  */
 export async function POST(request) {
   console.log("🚀 Серверный API PayLink: начало обработки запроса");
-
+  const expired_at = getTimePlus30Minutes();
   try {
     const { cartData } = await request.json();
     console.log("📦 Получены данные корзины:", cartData);
@@ -22,7 +23,7 @@ export async function POST(request) {
     const returnUrl =
       process.env.PAYLINK_RETURN_URL ||
       process.env.NEXT_PUBLIC_PAYLINK_RETURN_URL ||
-      "https://goldgames.kz";
+      "https://goldgames.kz/api/paylink/verification";
 
     console.log("🔑 Серверная конфигурация PayLink:");
     console.log(
@@ -58,7 +59,8 @@ export async function POST(request) {
       currency: "KZT",
       infinite: true,
       test: process.env.NODE_ENV !== "production", // автоматически в зависимости от окружения
-      immortal: true,
+      immortal: false,
+      expired_at: expired_at,
       return_url: returnUrl,
       shop_id: shopId,
       language: "ru",

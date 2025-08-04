@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { ShoppingBag, AlertCircle, CheckCircle, X } from "lucide-react";
 import useCartStore from "@/app/store/useCartStore";
-import BasicModal from "./BasicModal";
-import createPayLinkProduct from "../../../../../pay";
+import { createPayLinkProduct } from "@/app/utils/paylink";
 
 export default function CartSummary() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -186,22 +185,19 @@ export default function CartSummary() {
         )}
       </div>
 
-      <BasicModal
-        isOpen={isModalOpen}
-        closeModal={closeModal}
-        total={totalPrice}
-        onSuccess={handleOrderSuccess}
-      />
-
       {/* Компонент уведомлений */}
       {notification && (
-        <div className="fixed top-4 right-4 z-50 max-w-sm w-full">
+        <div
+          className="fixed top-4 right-4 max-w-sm w-full"
+          style={{ zIndex: 999999 }}
+        >
           <div
-            className={`p-4 rounded-lg shadow-lg flex items-center space-x-3 ${
+            className={`p-4 rounded-lg shadow-xl flex items-center space-x-3 backdrop-blur-sm ${
               notification.type === "success"
-                ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
-                : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                ? "bg-green-50/95 dark:bg-green-900/90 border border-green-200 dark:border-green-800"
+                : "bg-red-50/95 dark:bg-red-900/90 border border-red-200 dark:border-red-800"
             }`}
+            style={{ zIndex: 999999 }}
           >
             {notification.type === "success" ? (
               <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
@@ -222,11 +218,12 @@ export default function CartSummary() {
                 console.log("❌ Пользователь закрыл уведомление вручную");
                 setNotification(null);
               }}
-              className={`p-1 rounded-full hover:bg-opacity-20 ${
+              className={`p-1 rounded-full hover:bg-opacity-20 transition-colors ${
                 notification.type === "success"
                   ? "hover:bg-green-600"
                   : "hover:bg-red-600"
               }`}
+              style={{ zIndex: 999999 }}
             >
               <X
                 className={`w-4 h-4 ${
