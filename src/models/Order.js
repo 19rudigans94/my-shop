@@ -78,6 +78,7 @@ const orderSchema = new mongoose.Schema({
   paymentData: {
     paylinkUid: String,
     paylinkToken: String,
+    paylinkProductId: String, // ID продукта в PayLink
     paymentMethod: String,
   },
   emailsSent: {

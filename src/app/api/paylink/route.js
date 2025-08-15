@@ -197,7 +197,12 @@ export async function POST(request) {
     // Сохраняем заказ в базе данных
     try {
       console.log("💾 Начинаем сохранение заказа в БД...");
-      const orderId = await createOrder(cartData);
+      // Добавляем PayLink product ID к данным заказа
+      const orderDataWithPayLink = {
+        ...cartData,
+        paylinkProductId: result.id,
+      };
+      const orderId = await createOrder(orderDataWithPayLink);
       console.log(`✅ Заказ ${orderId} успешно создан в базе данных`);
 
       // Сохраняем данные заказа для последующей обработки после оплаты

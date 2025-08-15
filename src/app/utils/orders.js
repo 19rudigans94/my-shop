@@ -42,6 +42,10 @@ export async function createOrder(orderData) {
       totalItems: orderData.totalItems,
       status: "pending",
       paymentStatus: "pending",
+      paymentData: {
+        paylinkProductId: orderData.paylinkProductId,
+        paymentMethod: "paylink",
+      },
     });
 
     console.log("💾 Сохранение заказа в базе данных...");
@@ -191,6 +195,33 @@ export async function getOrderById(orderId) {
     return order;
   } catch (error) {
     console.error(`Ошибка при получении заказа ${orderId}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Получает заказ по PayLink product ID
+ * @param {string} paylinkProductId - PayLink product ID
+ * @returns {Promise<Object|null>} - Заказ или null
+ */
+export async function getOrderByPaylinkProductId(paylinkProductId) {
+  try {
+    await connectDB();
+
+    const order = await Order.findOne({
+      "paymentData.paylinkProductId": paylinkProductId,
+    });
+    console.log(
+      `🔍 Поиск заказа по PayLink ID ${paylinkProductId}: ${
+        order ? "найден" : "не найден"
+      }`
+    );
+    return order;
+  } catch (error) {
+    console.error(
+      `Ошибка при получении заказа по PayLink ID ${paylinkProductId}:`,
+      error
+    );
     return null;
   }
 }

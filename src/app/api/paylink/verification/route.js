@@ -4,6 +4,7 @@ import {
   getStoredOrderData,
   markEmailAsSent,
   markInventoryAsUpdated,
+  getOrderByPaylinkProductId,
 } from "@/app/utils/orders";
 import {
   sendCustomerPaymentConfirmation,
@@ -29,20 +30,48 @@ export async function GET(request) {
     console.log(`✅ Оплата прошла успешно. UID: ${uid}, Token: ${token}`);
 
     try {
-      // Получаем сохраненные данные заказа
-      const orderData = getStoredOrderData(uid);
+      // Сначала пытаемся получить данные из памяти
+      let orderData = getStoredOrderData(uid);
+
       if (!orderData) {
-        console.error(`❌ Данные заказа для UID ${uid} не найдены`);
-        return NextResponse.redirect(new URL("/success", request.url));
-      }
+        console.warn(
+          `⚠️ Данные заказа для UID ${uid} не найдены в памяти, ищем в БД...`
+        );
 
-      console.log(`📦 Найдены данные заказа для UID ${uid}`);
+        // Если данных нет в памяти, ищем заказ в БД по PayLink product ID
+        const order = await getOrderByPaylinkProductId(uid);
+        if (order) {
+          console.log(`📦 Найден заказ в БД: ${order.orderId}`);
 
-      // Обновляем статус заказа в базе данных
-      const order = await markOrderAsPaid(uid, { uid, token });
-      if (!order) {
-        console.error(`❌ Не удалось обновить заказ ${uid}`);
-        return NextResponse.redirect(new URL("/success", request.url));
+          // Обновляем статус заказа
+          await markOrderAsPaid(order.orderId, { uid, token });
+
+          // Восстанавливаем данные из заказа в БД
+          orderData = {
+            customerInfo: order.customerInfo,
+            items: order.items.map((item) => ({
+              title: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              platform: item.platform,
+              condition: item.condition,
+            })),
+            totalPrice: order.totalAmount,
+            totalItems: order.totalItems,
+          };
+        } else {
+          console.error(`❌ Заказ ${uid} не найден ни в памяти, ни в БД`);
+          return NextResponse.redirect(new URL("/success", request.url));
+        }
+      } else {
+        console.log(`📦 Найдены данные заказа в памяти для UID ${uid}`);
+
+        // Обновляем статус заказа в базе данных
+        const order = await markOrderAsPaid(uid, { uid, token });
+        if (!order) {
+          console.error(`❌ Не удалось обновить заказ ${uid}`);
+          return NextResponse.redirect(new URL("/success", request.url));
+        }
       }
 
       // Параллельно выполняем все операции
