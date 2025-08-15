@@ -1,4 +1,4 @@
-import { connectToDatabase } from "@/lib/mongodb";
+import connectDB from "@/lib/mongodb";
 import Order from "@/models/Order";
 
 /**
@@ -8,7 +8,7 @@ import Order from "@/models/Order";
  */
 export async function createOrder(orderData) {
   try {
-    await connectToDatabase();
+    await connectDB();
 
     const orderId = generateOrderId();
 
@@ -49,7 +49,7 @@ export async function createOrder(orderData) {
  */
 export async function markOrderAsPaid(orderId, paymentData = {}) {
   try {
-    await connectToDatabase();
+    await connectDB();
 
     const order = await Order.findOne({ orderId });
     if (!order) {
@@ -85,7 +85,7 @@ export async function markOrderAsPaid(orderId, paymentData = {}) {
  */
 export async function markEmailAsSent(orderId, emailType) {
   try {
-    await connectToDatabase();
+    await connectDB();
 
     const updateField =
       emailType === "customer"
@@ -125,7 +125,7 @@ export async function markEmailAsSent(orderId, emailType) {
  */
 export async function markInventoryAsUpdated(orderId) {
   try {
-    await connectToDatabase();
+    await connectDB();
 
     const result = await Order.updateOne(
       { orderId },
@@ -161,7 +161,7 @@ export async function markInventoryAsUpdated(orderId) {
  */
 export async function getOrderById(orderId) {
   try {
-    await connectToDatabase();
+    await connectDB();
 
     const order = await Order.findOne({ orderId });
     return order;

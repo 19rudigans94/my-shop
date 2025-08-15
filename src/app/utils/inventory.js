@@ -1,4 +1,4 @@
-import { connectToDatabase } from "@/lib/mongodb";
+import connectDB from "@/lib/mongodb";
 import Game from "@/models/Game";
 import Console from "@/models/Console";
 import Accessory from "@/models/Accessory";
@@ -12,7 +12,7 @@ import PhysicalDisk from "@/models/PhysicalDisk";
  */
 export async function updateInventoryAfterPurchase(items) {
   try {
-    await connectToDatabase();
+    await connectDB();
 
     const updatePromises = items.map(async (item) => {
       const { id, type, quantity, platform, condition } = item;
@@ -249,7 +249,7 @@ async function updatePhysicalDiskStock(
  */
 export async function getDigitalGameCredentials(gameId, platform, quantity) {
   try {
-    await connectToDatabase();
+    await connectDB();
 
     const digitalCopy = await DigitalCopy.findOne({
       gameId: gameId,
