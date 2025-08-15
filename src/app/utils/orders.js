@@ -15,18 +15,28 @@ export async function createOrder(orderData) {
     const orderId = generateOrderId();
     console.log(`🆔 Сгенерирован ID заказа: ${orderId}`);
 
+    // Логируем данные товаров для отладки
+    console.log("📦 Данные товаров для заказа:");
+    orderData.items.forEach((item, index) => {
+      console.log(
+        `  ${index + 1}. ID: ${item.id || "НЕТ"}, Title: ${
+          item.title || item.name
+        }, Type: ${item.type}`
+      );
+    });
+
     const order = new Order({
       orderId,
       customerInfo: orderData.customerInfo,
-      items: orderData.items.map((item) => ({
-        productId: item.id,
-        productType: item.type,
-        name: item.name || item.title,
-        price: item.price,
-        quantity: item.quantity,
+      items: orderData.items.map((item, index) => ({
+        productId: item.id || item._id || `temp_${orderId}_${index}`, // Используем временный ID если нет реального
+        productType: item.type || "unknown",
+        name: item.name || item.title || "Неизвестный товар",
+        price: item.price || 0,
+        quantity: item.quantity || 1,
         platform: item.platform,
         condition: item.condition,
-        total: item.price * item.quantity,
+        total: (item.price || 0) * (item.quantity || 1),
       })),
       totalAmount: orderData.totalPrice,
       totalItems: orderData.totalItems,

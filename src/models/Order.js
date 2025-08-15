@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const orderItemSchema = new mongoose.Schema({
   productId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String, // Изменяем на String для большей гибкости
     required: true,
   },
   productType: {
