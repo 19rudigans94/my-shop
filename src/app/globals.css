@@ -134,10 +134,10 @@ a:hover {
   color: var(--color-primary-dark);
 }
 
-a:focus {
+/* a:focus {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
-}
+} */
 
 /* Кнопки */
 button {
@@ -392,16 +392,6 @@ img {
     --color-bg-primary: #000000;
   }
 }
-
-/* Стили для фокуса */
-/* .focus-ring {
-  outline: none;
-}
-
-.focus-ring:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-} */
 
 /* Стили для градиентов */
 .gradient-yellow {
