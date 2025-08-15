@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingBag, AlertCircle, CheckCircle, X } from "lucide-react";
+import {
+  ShoppingBag,
+  AlertCircle,
+  CheckCircle,
+  X,
+  Mail,
+  Phone,
+} from "lucide-react";
 import useCartStore from "@/app/store/useCartStore";
 import { createPayLinkProduct } from "@/app/utils/paylink";
 
@@ -9,6 +16,10 @@ export default function CartSummary() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notification, setNotification] = useState(null);
   const [isPayLinkLoading, setIsPayLinkLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
   const getTotalPrice = useCartStore((state) => state.getTotalPrice);
   const getTotalItems = useCartStore((state) => state.getTotalItems);
@@ -21,6 +32,45 @@ export default function CartSummary() {
     if (DEBUG_MODE) {
       console.log(message, ...args);
     }
+  };
+
+  // Функции валидации
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhoneNumber = (phone) => {
+    const phoneRegex = /^[+]?[0-9\s\-\(\)]{10,15}$/;
+    return phoneRegex.test(phone.replace(/\s/g, ""));
+  };
+
+  const validateContactFields = () => {
+    let isValid = true;
+
+    // Валидация email
+    if (!email.trim()) {
+      setEmailError("Email обязателен для заполнения");
+      isValid = false;
+    } else if (!validateEmail(email)) {
+      setEmailError("Введите корректный email");
+      isValid = false;
+    } else {
+      setEmailError("");
+    }
+
+    // Валидация телефона
+    if (!phoneNumber.trim()) {
+      setPhoneError("Номер телефона обязателен для заполнения");
+      isValid = false;
+    } else if (!validatePhoneNumber(phoneNumber)) {
+      setPhoneError("Введите корректный номер телефона");
+      isValid = false;
+    } else {
+      setPhoneError("");
+    }
+
+    return isValid;
   };
 
   const handleCheckout = () => {
@@ -47,6 +97,13 @@ export default function CartSummary() {
       return;
     }
 
+    // Валидация контактных данных
+    if (!validateContactFields()) {
+      console.warn("⚠️ Не заполнены обязательные поля");
+      showNotification("Пожалуйста, заполните все обязательные поля", "error");
+      return;
+    }
+
     const cartItems = useCartStore.getState().items;
     console.log("📦 Состав корзины:", cartItems);
 
@@ -59,6 +116,10 @@ export default function CartSummary() {
         totalPrice,
         totalItems,
         items: cartItems,
+        customerInfo: {
+          email: email.trim(),
+          phoneNumber: phoneNumber.trim(),
+        },
       };
 
       const result = await createPayLinkProduct(cartData);
@@ -148,6 +209,85 @@ export default function CartSummary() {
           </div>
         </div>
 
+        {/* Поля контактной информации */}
+        <div className="space-y-4 mb-6">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+            Контактная информация
+          </h3>
+
+          {/* Поле Email */}
+          <div className="space-y-2">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Email *
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Mail className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailError) setEmailError("");
+                }}
+                placeholder="example@email.com"
+                className={`block w-full pl-10 pr-3 py-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 ${
+                  emailError
+                    ? "border-red-300 dark:border-red-600"
+                    : "border-gray-300 dark:border-gray-600"
+                }`}
+              />
+            </div>
+            {emailError && (
+              <p className="text-sm text-red-600 dark:text-red-400 flex items-center">
+                <AlertCircle className="w-4 h-4 mr-1" />
+                {emailError}
+              </p>
+            )}
+          </div>
+
+          {/* Поле номера телефона */}
+          <div className="space-y-2">
+            <label
+              htmlFor="phone"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Номер телефона *
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Phone className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="tel"
+                id="phone"
+                value={phoneNumber}
+                onChange={(e) => {
+                  setPhoneNumber(e.target.value);
+                  if (phoneError) setPhoneError("");
+                }}
+                placeholder="+7 (777) 123-45-67"
+                className={`block w-full pl-10 pr-3 py-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 ${
+                  phoneError
+                    ? "border-red-300 dark:border-red-600"
+                    : "border-gray-300 dark:border-gray-600"
+                }`}
+              />
+            </div>
+            {phoneError && (
+              <p className="text-sm text-red-600 dark:text-red-400 flex items-center">
+                <AlertCircle className="w-4 h-4 mr-1" />
+                {phoneError}
+              </p>
+            )}
+          </div>
+        </div>
+
         <div className="space-y-3">
           <button
             onClick={() => {
@@ -156,9 +296,17 @@ export default function CartSummary() {
               );
               handlePayLinkCheckout();
             }}
-            disabled={totalItems === 0 || isPayLinkLoading}
+            disabled={
+              totalItems === 0 ||
+              isPayLinkLoading ||
+              !email.trim() ||
+              !phoneNumber.trim()
+            }
             className={`w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center transition-all ${
-              totalItems === 0 || isPayLinkLoading
+              totalItems === 0 ||
+              isPayLinkLoading ||
+              !email.trim() ||
+              !phoneNumber.trim()
                 ? "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                 : "bg-amber-500 text-white hover:bg-amber-600"
             }`}

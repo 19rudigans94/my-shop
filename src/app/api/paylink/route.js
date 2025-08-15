@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getTimePlus30Minutes } from "../../utils/lifeTime";
+import { createOrder, storeOrderDataForProcessing } from "../../utils/orders";
 
 /**
  * Серверный API маршрут для создания продуктов в PayLink.kz
@@ -133,6 +134,19 @@ export async function POST(request) {
     console.log("✅ Успешный ответ от PayLink:");
     console.log("- ID продукта:", result.id);
     console.log("- Ссылка оплаты:", result.pay_url);
+
+    // Сохраняем заказ в базе данных
+    try {
+      const orderId = await createOrder(cartData);
+      console.log(`💾 Заказ ${orderId} создан в базе данных`);
+
+      // Сохраняем данные заказа для последующей обработки после оплаты
+      // Используем ID продукта PayLink как ключ для связи
+      storeOrderDataForProcessing(result.id, cartData);
+    } catch (dbError) {
+      console.error("⚠️ Ошибка при сохранении заказа в БД:", dbError);
+      // Не блокируем процесс оплаты из-за ошибки БД
+    }
 
     return NextResponse.json({
       success: true,
