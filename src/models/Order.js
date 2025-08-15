@@ -109,7 +109,7 @@ const orderSchema = new mongoose.Schema({
 });
 
 // Индексы для быстрого поиска
-orderSchema.index({ orderId: 1 });
+// orderId уже имеет unique: true, поэтому не добавляем дублирующий индекс
 orderSchema.index({ "customerInfo.email": 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ paymentStatus: 1 });

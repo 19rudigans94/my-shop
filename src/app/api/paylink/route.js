@@ -116,13 +116,57 @@ export async function POST(request) {
     console.log("- Статус:", response.status, response.statusText);
 
     if (!response.ok) {
-      const error = await response.json();
-      console.error("❌ Ошибка от PayLink API:", error);
+      console.error("❌ Ошибка от PayLink API:");
+      console.error("- Статус:", response.status);
+      console.error("- Статус текст:", response.statusText);
+
+      let error;
+      let errorMessage = "Ошибка при создании ссылки для оплаты";
+
+      try {
+        // Пытаемся получить текст ответа
+        const responseText = await response.text();
+        console.error("- Тело ответа:", responseText.substring(0, 200));
+
+        // Пытаемся парсить как JSON
+        try {
+          error = JSON.parse(responseText);
+          console.error("- JSON ошибка:", error);
+        } catch (jsonError) {
+          // Если не JSON, создаем объект ошибки
+          console.error("- Ответ не в формате JSON");
+          error = {
+            message: responseText.includes("<!DOCTYPE")
+              ? "Сервер PayLink временно недоступен"
+              : responseText,
+            status: response.status,
+          };
+        }
+
+        // Определяем сообщение об ошибке в зависимости от статуса
+        if (response.status === 502) {
+          errorMessage = "Сервис оплаты временно недоступен. Попробуйте позже.";
+        } else if (response.status === 503) {
+          errorMessage = "Сервис оплаты на техническом обслуживании.";
+        } else if (response.status >= 500) {
+          errorMessage = "Временные проблемы с сервисом оплаты.";
+        } else if (response.status === 401) {
+          errorMessage = "Ошибка авторизации с сервисом оплаты.";
+        } else if (response.status === 400) {
+          errorMessage = "Некорректные данные заказа.";
+        }
+      } catch (textError) {
+        console.error("- Ошибка при получении тела ответа:", textError);
+        error = {
+          message: "Неизвестная ошибка сервиса оплаты",
+          status: response.status,
+        };
+      }
 
       return NextResponse.json(
         {
           success: false,
-          error: "Ошибка при создании ссылки для оплаты",
+          error: errorMessage,
           details: error,
           status: response.status,
         },
@@ -130,21 +174,48 @@ export async function POST(request) {
       );
     }
 
-    const result = await response.json();
-    console.log("✅ Успешный ответ от PayLink:");
-    console.log("- ID продукта:", result.id);
-    console.log("- Ссылка оплаты:", result.pay_url);
+    let result;
+    try {
+      result = await response.json();
+      console.log("✅ Успешный ответ от PayLink:");
+      console.log("- ID продукта:", result.id);
+      console.log("- Ссылка оплаты:", result.pay_url);
+    } catch (parseError) {
+      console.error("❌ Ошибка парсинга успешного ответа от PayLink:");
+      console.error("- Ошибка:", parseError.message);
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Ошибка обработки ответа от сервиса оплаты",
+          details: { message: parseError.message },
+        },
+        { status: 500 }
+      );
+    }
 
     // Сохраняем заказ в базе данных
     try {
+      console.log("💾 Начинаем сохранение заказа в БД...");
       const orderId = await createOrder(cartData);
-      console.log(`💾 Заказ ${orderId} создан в базе данных`);
+      console.log(`✅ Заказ ${orderId} успешно создан в базе данных`);
 
       // Сохраняем данные заказа для последующей обработки после оплаты
       // Используем ID продукта PayLink как ключ для связи
+      console.log(`💾 Сохраняем данные заказа с ключом ${result.id}...`);
       storeOrderDataForProcessing(result.id, cartData);
+      console.log(`✅ Данные заказа сохранены для последующей обработки`);
     } catch (dbError) {
-      console.error("⚠️ Ошибка при сохранении заказа в БД:", dbError);
+      console.error("❌ Ошибка при работе с базой данных:");
+      console.error("- Тип ошибки:", dbError.name);
+      console.error("- Сообщение:", dbError.message);
+      console.error("- Стек:", dbError.stack);
+
+      // Сохраняем данные заказа даже если БД недоступна
+      console.log("⚠️ Сохраняем данные заказа только в памяти...");
+      storeOrderDataForProcessing(result.id, cartData);
+      console.log("✅ Данные заказа сохранены в памяти (БД недоступна)");
+
       // Не блокируем процесс оплаты из-за ошибки БД
     }
 

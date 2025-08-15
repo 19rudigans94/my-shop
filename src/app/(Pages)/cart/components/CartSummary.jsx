@@ -77,13 +77,15 @@ export default function CartSummary() {
     setIsModalOpen(true);
   };
 
-  const showNotification = (message, type = "error") => {
+  const showNotification = (message, type = "error", duration = 5000) => {
     console.log(`🔔 Показ уведомления [${type.toUpperCase()}]:`, message);
     setNotification({ message, type });
     setTimeout(() => {
-      console.log("🔕 Автоматическое скрытие уведомления через 5 сек");
+      console.log(
+        `🔕 Автоматическое скрытие уведомления через ${duration / 1000} сек`
+      );
       setNotification(null);
-    }, 5000);
+    }, duration);
   };
 
   const handlePayLinkCheckout = async () => {
@@ -127,13 +129,17 @@ export default function CartSummary() {
 
       if (result?.pay_url) {
         console.log("✅ Получена ссылка для оплаты:", result.pay_url);
-        showNotification("Перенаправление на страницу оплаты...", "success");
+        showNotification(
+          "Перенаправление на страницу оплаты...",
+          "success",
+          2000
+        );
 
-        console.log("⏰ Запуск таймера перенаправления (1000ms)...");
+        console.log("⏰ Запуск таймера перенаправления (1500ms)...");
         setTimeout(() => {
           console.log("🔄 Выполнение перенаправления на:", result.pay_url);
           window.location.href = result.pay_url;
-        }, 1000);
+        }, 1500);
       } else {
         console.error("❌ PayLink не вернул ссылку для оплаты");
         console.error("- Полученный результат:", result);
@@ -145,11 +151,23 @@ export default function CartSummary() {
       console.error("- Сообщение ошибки:", error.message);
       console.error("- Стек ошибки:", error.stack);
 
-      showNotification(
-        error.message ||
-          "Произошла ошибка при создании ссылки оплаты. Попробуйте еще раз.",
-        "error"
-      );
+      // Показываем более дружественное сообщение об ошибке
+      let errorMessage = "Произошла ошибка при создании ссылки оплаты.";
+
+      if (
+        error.message.includes("Failed to fetch") ||
+        error.message.includes("NetworkError")
+      ) {
+        errorMessage =
+          "Проблемы с подключением. Проверьте интернет и попробуйте снова.";
+      } else if (error.message.includes("500")) {
+        errorMessage =
+          "Временные проблемы на сервере. Попробуйте еще раз через несколько секунд.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      showNotification(errorMessage, "error", 7000);
     } finally {
       console.log("🏁 Снятие флага загрузки PayLink");
       setIsPayLinkLoading(false);

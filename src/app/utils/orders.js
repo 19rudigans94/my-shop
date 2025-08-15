@@ -8,9 +8,12 @@ import Order from "@/models/Order";
  */
 export async function createOrder(orderData) {
   try {
+    console.log("🔌 Подключение к базе данных...");
     await connectDB();
+    console.log("✅ Успешное подключение к базе данных");
 
     const orderId = generateOrderId();
+    console.log(`🆔 Сгенерирован ID заказа: ${orderId}`);
 
     const order = new Order({
       orderId,
@@ -31,12 +34,23 @@ export async function createOrder(orderData) {
       paymentStatus: "pending",
     });
 
+    console.log("💾 Сохранение заказа в базе данных...");
     await order.save();
-    console.log(`✅ Заказ ${orderId} создан в базе данных`);
+    console.log(`✅ Заказ ${orderId} успешно создан в базе данных`);
 
     return orderId;
   } catch (error) {
-    console.error("Ошибка при создании заказа:", error);
+    console.error("❌ Ошибка при создании заказа:");
+    console.error("- Тип ошибки:", error.name);
+    console.error("- Сообщение:", error.message);
+
+    // Добавляем информацию о типе ошибки
+    if (error.name === "MongooseError" || error.name === "MongoNetworkError") {
+      console.error("🔌 Проблема с подключением к MongoDB");
+    } else if (error.name === "ValidationError") {
+      console.error("📝 Ошибка валидации данных заказа");
+    }
+
     throw error;
   }
 }
