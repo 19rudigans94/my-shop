@@ -25,4 +25,4 @@ jobs:
 
       - name: Run deploy script on server
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@82.115.49.188 "bash /home/ubuntu/update-my-shop.sh"
+          ssh -o StrictHostKeyChecking=no ubuntu@82.115.49.188 "bash /home/ubuntu/my-shop/scripts/update-my-shop.sh"
