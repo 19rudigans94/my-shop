@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request) {
-  const { searchParams } = new URL(req.url);
+  const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const uid = searchParams.get("uid");
   const token = searchParams.get("token");
@@ -17,5 +17,5 @@ export async function GET(request) {
   }
 
   // Иначе ошибка или отмена
-  return NextResponse.redirect(new URL("/failed", req.url));
+  return NextResponse.redirect(new URL("/failed", request.url));
 }

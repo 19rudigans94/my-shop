@@ -6,55 +6,30 @@ import useCartStore from "@/app/store/useCartStore";
 import { createPayLinkProduct } from "@/app/utils/paylink";
 
 export default function CartSummary() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [notification, setNotification] = useState(null);
   const [isPayLinkLoading, setIsPayLinkLoading] = useState(false);
 
   const getTotalPrice = useCartStore((state) => state.getTotalPrice);
   const getTotalItems = useCartStore((state) => state.getTotalItems);
-  const clearCart = useCartStore((state) => state.clearCart);
-
-  // Включение режима отладки (можно вынести в переменные окружения)
-  const DEBUG_MODE = process.env.NODE_ENV === "development";
-
-  const debugLog = (message, ...args) => {
-    if (DEBUG_MODE) {
-      console.log(message, ...args);
-    }
-  };
-
-  const handleCheckout = () => {
-    setIsModalOpen(true);
-  };
 
   const showNotification = (message, type = "error") => {
-    console.log(`🔔 Показ уведомления [${type.toUpperCase()}]:`, message);
     setNotification({ message, type });
-    setTimeout(() => {
-      console.log("🔕 Автоматическое скрытие уведомления через 5 сек");
-      setNotification(null);
-    }, 5000);
+    setTimeout(() => setNotification(null), 5000);
   };
 
   const handlePayLinkCheckout = async () => {
-    console.log("🛒 Начало процесса оплаты через PayLink");
-    console.log("- Общая сумма:", totalPrice, "тенге");
-    console.log("- Количество товаров:", totalItems);
+    const totalPrice = getTotalPrice();
+    const totalItems = getTotalItems();
 
     if (totalItems === 0) {
-      console.warn("⚠️ Попытка оплаты пустой корзины");
       showNotification("Корзина пуста", "error");
       return;
     }
 
     const cartItems = useCartStore.getState().items;
-    console.log("📦 Состав корзины:", cartItems);
-
     setIsPayLinkLoading(true);
-    console.log("⏳ Установлен флаг загрузки PayLink");
 
     try {
-      console.log("🚀 Вызов createPayLinkProduct...");
       const cartData = {
         totalPrice,
         totalItems,
@@ -62,63 +37,28 @@ export default function CartSummary() {
       };
 
       const result = await createPayLinkProduct(cartData);
-      console.log("📊 Результат от createPayLinkProduct:", result);
 
       if (result?.pay_url) {
-        console.log("✅ Получена ссылка для оплаты:", result.pay_url);
         showNotification("Перенаправление на страницу оплаты...", "success");
-
-        console.log("⏰ Запуск таймера перенаправления (1000ms)...");
         setTimeout(() => {
-          console.log("🔄 Выполнение перенаправления на:", result.pay_url);
           window.location.href = result.pay_url;
         }, 1000);
       } else {
-        console.error("❌ PayLink не вернул ссылку для оплаты");
-        console.error("- Полученный результат:", result);
         throw new Error("Не удалось получить ссылку для оплаты");
       }
     } catch (error) {
-      console.error("💥 Ошибка в handlePayLinkCheckout:");
-      console.error("- Название ошибки:", error.name);
-      console.error("- Сообщение ошибки:", error.message);
-      console.error("- Стек ошибки:", error.stack);
-
       showNotification(
         error.message ||
           "Произошла ошибка при создании ссылки оплаты. Попробуйте еще раз.",
         "error"
       );
     } finally {
-      console.log("🏁 Снятие флага загрузки PayLink");
       setIsPayLinkLoading(false);
     }
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-  };
-
-  const handleOrderSuccess = () => {
-    console.log("🎉 Успешное оформление заказа");
-    console.log("- Очистка корзины...");
-    // Очистка корзины при успешном оформлении заказа
-    clearCart();
-    console.log("- Закрытие модального окна...");
-    closeModal();
-    console.log("✅ Процесс оформления завершен");
-  };
-
   const totalPrice = getTotalPrice();
   const totalItems = getTotalItems();
-
-  // Логирование при каждом рендере компонента
-  console.log("🔄 CartSummary рендер:");
-  console.log("- Текущая цена:", totalPrice);
-  console.log("- Текущее количество:", totalItems);
-  console.log("- Состояние загрузки PayLink:", isPayLinkLoading);
-  console.log("- Состояние модального окна:", isModalOpen);
-  console.log("- Текущее уведомление:", notification);
 
   return (
     <>
@@ -150,12 +90,7 @@ export default function CartSummary() {
 
         <div className="space-y-3">
           <button
-            onClick={() => {
-              console.log(
-                "🖱️ Пользователь нажал кнопку 'Быстрая оплата (PayLink)'"
-              );
-              handlePayLinkCheckout();
-            }}
+            onClick={handlePayLinkCheckout}
             disabled={totalItems === 0 || isPayLinkLoading}
             className={`w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center transition-all ${
               totalItems === 0 || isPayLinkLoading
@@ -214,10 +149,7 @@ export default function CartSummary() {
               {notification.message}
             </p>
             <button
-              onClick={() => {
-                console.log("❌ Пользователь закрыл уведомление вручную");
-                setNotification(null);
-              }}
+              onClick={() => setNotification(null)}
               className={`p-1 rounded-full hover:bg-opacity-20 transition-colors ${
                 notification.type === "success"
                   ? "hover:bg-green-600"
