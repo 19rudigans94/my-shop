@@ -1,103 +1,54 @@
 import { NextResponse } from "next/server";
 import { getTimePlus30Minutes } from "../../utils/lifeTime";
 
-/**
- * Серверный API маршрут для создания продуктов в PayLink.kz
- *
- * Решает проблему CORS, так как запросы к PayLink выполняются на сервере,
- * а клиент обращается только к нашему API.
- *
- * POST /api/paylink
- * Body: { cartData: { totalPrice, totalItems, items } }
- */
 export async function POST(request) {
-  console.log("🚀 Серверный API PayLink: начало обработки запроса");
-  const expired_at = getTimePlus30Minutes();
   try {
     const { cartData } = await request.json();
-    console.log("📦 Получены данные корзины:", cartData);
+    console.log("📦 Данные корзины:", JSON.stringify(cartData, null, 2));
 
-    // Получаем секретные данные из серверных переменных окружения
+    const expired_at = getTimePlus30Minutes();
+
+    // Базовые переменные окружения
     const shopSecret = process.env.PAYLINK_SHOP_SECRET;
     const shopId = process.env.PAYLINK_SHOP_ID;
-    const returnUrl =
-      process.env.PAYLINK_RETURN_URL ||
-      process.env.NEXT_PUBLIC_PAYLINK_RETURN_URL ||
-      "https://goldgames.kz/api/paylink/verification";
+    const returnUrl = process.env.PAYLINK_RETURN_URL;
 
-    console.log("🔑 Серверная конфигурация PayLink:");
-    console.log(
-      "- Shop ID:",
-      shopId ? `***${shopId.slice(-4)}` : "❌ НЕ УСТАНОВЛЕН"
-    );
-    console.log(
-      "- Shop Secret:",
-      shopSecret ? `***${shopSecret.slice(-8)}` : "❌ НЕ УСТАНОВЛЕН"
-    );
-    console.log("- Return URL:", returnUrl);
+    console.log("🔗 Return URL:", returnUrl);
 
-    // Проверяем наличие обязательных параметров
+    // Проверяем обязательные переменные
     if (!shopId || !shopSecret) {
-      console.error("🚨 ОШИБКА: Отсутствуют серверные переменные окружения!");
-      console.error("Необходимо установить:");
-      console.error("- PAYLINK_SHOP_ID:", shopId ? "✅" : "❌");
-      console.error("- PAYLINK_SHOP_SECRET:", shopSecret ? "✅" : "❌");
-
+      console.error("❌ Отсутствуют переменные окружения PayLink");
       return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Сервер не настроен для работы с PayLink. Обратитесь к администратору.",
-          details: "Отсутствуют серверные переменные окружения",
-        },
+        { success: false, error: "Не настроены переменные окружения PayLink" },
         { status: 500 }
       );
     }
 
-    // Формируем данные для PayLink
-    const baseData = {
-      currency: "KZT",
-      infinite: true,
-      test: process.env.NODE_ENV !== "production", // автоматически в зависимости от окружения
-      immortal: false,
-      expired_at: expired_at,
-      return_url: returnUrl,
-      shop_id: shopId,
-      language: "ru",
-      transaction_type: "payment",
-    };
-
-    // Формируем описание заказа
-    const orderDescription =
-      cartData.items && cartData.items.length > 0
-        ? `Заказ: ${cartData.items
-            .map((item) => `${item.title} (${item.quantity}шт)`)
-            .join(", ")}`
-        : "Заказ из интернет-магазина";
-
+    // Формируем название и описание заказа
     const orderName =
-      cartData.totalItems > 1
-        ? `Заказ из ${cartData.totalItems} товар${
-            cartData.totalItems > 4 ? "ов" : cartData.totalItems > 1 ? "а" : ""
-          }`
-        : cartData.items?.[0]?.title || "Покупка в интернет-магазине";
+      cartData.items?.[0]?.title || "Покупка в интернет-магазине";
+    const orderDescription =
+      cartData.items
+        ?.map((item) => `${item.title} (${item.quantity}шт)`)
+        .join(", ") || "Заказ из интернет-магазина";
 
-    console.log("📋 Формирование заказа:");
-    console.log("- Название:", orderName);
-    console.log("- Описание:", orderDescription);
-    console.log("- Цена (тенге):", cartData.totalPrice);
-    console.log("- Сумма для PayLink (тиыны):", cartData.totalPrice * 100);
-
+    // Данные для PayLink API согласно документации
     const payload = {
       name: orderName,
+      return_url: returnUrl,
       description: orderDescription,
-      amount: (cartData.totalPrice * 100).toString(),
-      ...baseData,
+      currency: "KZT",
+      amount: Math.round(cartData.totalPrice * 100),
+      quantity: "1",
+      infinite: true,
+      expired_at: expired_at, // обязательно если не immortal
+      language: "ru", // двухбуквенный формат
+      test: process.env.NODE_ENV !== "production",
     };
 
-    console.log("📤 Отправка запроса к PayLink API...");
+    console.log("📤 Payload для PayLink:", JSON.stringify(payload, null, 2));
 
-    // Выполняем запрос к PayLink API на сервере
+    // Отправляем запрос к PayLink API
     const authString = `${shopId}:${shopSecret}`;
     const base64Auth = Buffer.from(authString).toString("base64");
 
@@ -111,45 +62,32 @@ export async function POST(request) {
       body: JSON.stringify(payload),
     });
 
-    console.log("📡 Ответ от PayLink API:");
-    console.log("- Статус:", response.status, response.statusText);
-
     if (!response.ok) {
-      const error = await response.json();
-      console.error("❌ Ошибка от PayLink API:", error);
+      const errorText = await response.text();
+      console.error("❌ Ошибка PayLink API:", {
+        status: response.status,
+        statusText: response.statusText,
+        errorText: errorText,
+      });
+
+      let error;
+      try {
+        error = JSON.parse(errorText);
+      } catch (e) {
+        error = { message: errorText };
+      }
 
       return NextResponse.json(
-        {
-          success: false,
-          error: "Ошибка при создании ссылки для оплаты",
-          details: error,
-          status: response.status,
-        },
+        { success: false, error: error },
         { status: response.status }
       );
     }
 
     const result = await response.json();
-    console.log("✅ Успешный ответ от PayLink:");
-    console.log("- ID продукта:", result.id);
-    console.log("- Ссылка оплаты:", result.pay_url);
-
-    return NextResponse.json({
-      success: true,
-      data: result,
-    });
+    return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    console.error("💥 Серверная ошибка при обработке PayLink запроса:");
-    console.error("- Тип:", error.name);
-    console.error("- Сообщение:", error.message);
-    console.error("- Стек:", error.stack);
-
     return NextResponse.json(
-      {
-        success: false,
-        error: "Внутренняя ошибка сервера при создании платежа",
-        details: error.message,
-      },
+      { success: false, error: error.message },
       { status: 500 }
     );
   }
