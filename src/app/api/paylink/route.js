@@ -35,15 +35,15 @@ export async function POST(request) {
     // Данные для PayLink API согласно документации
     const payload = {
       name: orderName,
-      return_url: returnUrl,
       description: orderDescription,
       currency: "KZT",
       amount: Math.round(cartData.totalPrice * 100),
-      quantity: "1",
-      infinite: true,
+      infinite: false,
+      test: false,
+      immortal: false,
       expired_at: expired_at, // обязательно если не immortal
       language: "ru", // двухбуквенный формат
-      test: process.env.NODE_ENV !== "production",
+      return_url: returnUrl,
     };
 
     console.log("📤 Payload для PayLink:", JSON.stringify(payload, null, 2));
