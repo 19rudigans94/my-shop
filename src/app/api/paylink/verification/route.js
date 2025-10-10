@@ -7,8 +7,8 @@ export async function GET(request) {
   const token = searchParams.get("token");
 
   if (status === "successful") {
-    // 1. Найти заказ по uid или token
-    // 2. Обновить статус в БД
+    // 1. Найти заказ по uid или token.
+    // 2. Обновить статус в БД.
     // 3. Вернуть успешный ответ или редирект
     console.log(`Оплата успешна. UID: ${uid}`);
 
