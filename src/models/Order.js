@@ -16,6 +16,25 @@ const OrderSchema = new mongoose.Schema(
         total: Number,
         category: String,
         image: String,
+        type: {
+          type: String,
+          enum: ["physical", "digital"],
+          required: true,
+        },
+        // Данные для цифровых товаров
+        digitalData: {
+          platform: String,
+          credentials: [
+            {
+              login: String,
+              password: String,
+              assignedAt: {
+                type: Date,
+                default: Date.now,
+              },
+            },
+          ],
+        },
       },
     ],
     totalPrice: {
@@ -64,8 +83,7 @@ const OrderSchema = new mongoose.Schema(
   }
 );
 
-// Индекс для быстрого поиска по uid
-OrderSchema.index({ uid: 1 });
+// Дополнительные индексы (uid уже имеет unique индекс)
 OrderSchema.index({ status: 1 });
 OrderSchema.index({ createdAt: -1 });
 

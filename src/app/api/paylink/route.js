@@ -110,6 +110,11 @@ export async function POST(request) {
             total: item.price * item.quantity,
             category: item.category,
             image: item.image,
+            // Определяем тип товара на основе категории или других признаков
+            type:
+              item.category === "games" && item.platform
+                ? "digital"
+                : "physical",
           })),
           totalPrice: cartData.totalPrice,
           totalItems: cartData.totalItems,
