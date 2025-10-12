@@ -58,27 +58,94 @@ export async function sendOrderConfirmationEmail(orderData) {
   const mailOptions = {
     from: `GoldGames <${process.env.NEXT_FEEDBACK_MAIL}>`,
     to: customer.email,
-    subject: `Подтверждение заказа #${orderId}`,
+    subject: `✅ Подтверждение заказа #${orderId} - GoldGames`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #333; text-align: center;">Спасибо за ваш заказ!</h2>
-        <p style="color: #666;">Здравствуйте, ${customer.name}!</p>
-        <p style="color: #666;">Ваш заказ #${orderId} успешно оформлен.</p>
-        
-        <h3 style="color: #333; margin-top: 30px;">Детали заказа:</h3>
-        ${itemsTable}
-        
-        <h3 style="color: #333; margin-top: 30px;">Контактная информация:</h3>
-        <p style="color: #666;">
-          <strong>Имя:</strong> ${customer.name}<br>
-          <strong>Телефон:</strong> ${customer.phone}<br>
-          <strong>Email:</strong> ${customer.email}
-        </p>
-        
-        <p style="color: #666; margin-top: 30px; text-align: center;">
-          Если у вас есть вопросы, пожалуйста, свяжитесь с нами.
-        </p>
-      </div>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Подтверждение заказа</title>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: Arial, sans-serif;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          
+          <!-- Заголовок -->
+          <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 40px 20px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">🎮 GoldGames</h1>
+            <p style="color: white; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Ваш заказ успешно оплачен!</p>
+          </div>
+          
+          <!-- Основной контент -->
+          <div style="padding: 40px 30px;">
+            
+            <!-- Приветствие -->
+            <div style="text-align: center; margin-bottom: 30px;">
+              <div style="font-size: 48px; margin-bottom: 15px;">🎉</div>
+              <h2 style="color: #333; margin: 0; font-size: 24px;">Спасибо за покупку!</h2>
+              <p style="color: #666; margin: 10px 0 0 0; font-size: 16px;">
+                Заказ <strong>#${orderId}</strong> успешно оплачен и принят в обработку
+              </p>
+            </div>
+            
+            <!-- Информация о заказе -->
+            <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+              <h3 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">📋 Детали заказа</h3>
+              ${itemsTable}
+            </div>
+            
+            <!-- Контактная информация -->
+            <div style="background-color: #e3f2fd; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+              <h3 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">📞 Контактная информация</h3>
+              <div style="color: #666; line-height: 1.6;">
+                <p style="margin: 5px 0;"><strong>Телефон:</strong> ${customer.phone}</p>
+                <p style="margin: 5px 0;"><strong>Email:</strong> ${customer.email}</p>
+              </div>
+            </div>
+            
+            <!-- Что дальше -->
+            <div style="background-color: #f0f9ff; border-left: 4px solid #3b82f6; padding: 20px; margin-bottom: 30px;">
+              <h3 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">🚀 Что дальше?</h3>
+              <ul style="color: #666; margin: 0; padding-left: 20px; line-height: 1.6;">
+                <li>Мы обработаем ваш заказ в течение 1-2 часов</li>
+                <li>Цифровые товары будут отправлены на указанный email</li>
+                <li>Физические товары будут доставлены по указанному адресу</li>
+                <li>Вы получите уведомление о статусе заказа</li>
+              </ul>
+            </div>
+            
+            <!-- Поддержка -->
+            <div style="text-align: center; padding: 20px; background-color: #fafafa; border-radius: 8px;">
+              <h3 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">💬 Нужна помощь?</h3>
+              <p style="color: #666; margin: 0 0 15px 0;">Мы всегда готовы помочь вам!</p>
+              <div style="margin: 15px 0;">
+                <a href="https://wa.me/77477048081" style="display: inline-block; background-color: #25d366; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 0 5px; font-weight: bold;">
+                  📱 WhatsApp
+                </a>
+                <a href="mailto:info@goldgames.kz" style="display: inline-block; background-color: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 0 5px; font-weight: bold;">
+                  ✉️ Email
+                </a>
+              </div>
+              <p style="color: #999; font-size: 12px; margin: 15px 0 0 0;">
+                Время работы: ПН-ВС с 9:00 до 21:00 (GMT+6)
+              </p>
+            </div>
+            
+          </div>
+          
+          <!-- Подвал -->
+          <div style="background-color: #333; color: white; padding: 20px; text-align: center;">
+            <p style="margin: 0; font-size: 14px;">
+              © 2024 GoldGames. Все права защищены.
+            </p>
+            <p style="margin: 10px 0 0 0; font-size: 12px; opacity: 0.7;">
+              Это автоматическое письмо, пожалуйста, не отвечайте на него.
+            </p>
+          </div>
+          
+        </div>
+      </body>
+      </html>
     `,
   };
 

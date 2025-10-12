@@ -1,10 +1,20 @@
 import { NextResponse } from "next/server";
 import { getTimePlus30Minutes } from "../../utils/lifeTime";
+import connectDB from "@/lib/mongodb";
+import Order from "@/models/Order";
 
 export async function POST(request) {
   try {
     const { cartData } = await request.json();
     console.log("📦 Данные корзины:", JSON.stringify(cartData, null, 2));
+
+    // Логируем контактные данные, если они есть
+    if (cartData.contactData) {
+      console.log("📞 Контактные данные:", {
+        phone: cartData.contactData.phone,
+        email: cartData.contactData.email,
+      });
+    }
 
     const expired_at = getTimePlus30Minutes();
 
@@ -38,7 +48,7 @@ export async function POST(request) {
       description: orderDescription,
       currency: "KZT",
       amount: Math.round(cartData.totalPrice * 100),
-      infinite: false,
+      infinite: true,
       test: false,
       immortal: false,
       expired_at: expired_at, // обязательно если не immortal
@@ -84,6 +94,43 @@ export async function POST(request) {
     }
 
     const result = await response.json();
+
+    // Сохраняем данные заказа в базу данных для последующего использования при успешной оплате
+    if (result && result.uid) {
+      try {
+        await connectDB();
+
+        const orderData = {
+          uid: result.uid,
+          items: cartData.items.map((item) => ({
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            quantity: item.quantity,
+            total: item.price * item.quantity,
+            category: item.category,
+            image: item.image,
+          })),
+          totalPrice: cartData.totalPrice,
+          totalItems: cartData.totalItems,
+          contactData: cartData.contactData,
+          status: "pending",
+        };
+
+        const order = new Order(orderData);
+        await order.save();
+
+        console.log("💾 Заказ успешно сохранен в БД:", {
+          uid: result.uid,
+          totalPrice: cartData.totalPrice,
+          email: cartData.contactData?.email,
+        });
+      } catch (dbError) {
+        console.error("❌ Ошибка при сохранении заказа в БД:", dbError);
+        // Продолжаем выполнение, даже если не удалось сохранить в БД
+      }
+    }
+
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     return NextResponse.json(
