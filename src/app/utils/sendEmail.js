@@ -17,12 +17,17 @@ const transporter = nodemailer.createTransport({
 export async function sendOrderConfirmationEmail(orderData) {
   const { customer, order, orderId } = orderData;
 
+  // Разделяем товары на физические и цифровые
+  const physicalItems = order.items.filter((item) => item.type === "physical");
+  const digitalItems = order.items.filter((item) => item.type === "digital");
+
   // Формируем HTML таблицу с товарами
   const itemsTable = `
     <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
       <thead>
         <tr style="background-color: #f8f9fa;">
           <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6;">Товар</th>
+          <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">Тип</th>
           <th style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">Количество</th>
           <th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">Цена</th>
           <th style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">Сумма</th>
@@ -36,6 +41,15 @@ export async function sendOrderConfirmationEmail(orderData) {
             <td style="padding: 12px; border: 1px solid #dee2e6;">${
               item.name || "Товар"
             }</td>
+            <td style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">
+              <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; ${
+                item.type === "digital"
+                  ? "background-color: #e3f2fd; color: #1976d2;"
+                  : "background-color: #f3e5f5; color: #7b1fa2;"
+              }">
+                ${item.type === "digital" ? "🎮 Цифровая" : "📦 Физическая"}
+              </span>
+            </td>
             <td style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">${
               item.quantity
             }</td>
@@ -48,12 +62,93 @@ export async function sendOrderConfirmationEmail(orderData) {
       </tbody>
       <tfoot>
         <tr style="background-color: #f8f9fa; font-weight: bold;">
-          <td colspan="3" style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">Итого:</td>
+          <td colspan="4" style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">Итого:</td>
           <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${order.totalAmount.toLocaleString()} ₸</td>
         </tr>
       </tfoot>
     </table>
   `;
+
+  // Формируем секцию с цифровыми товарами и данными доступа
+  const digitalItemsSection =
+    digitalItems.length > 0
+      ? `
+    <div style="background-color: #e3f2fd; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+      <h3 style="color: #1976d2; margin: 0 0 15px 0; font-size: 18px;">🎮 Цифровые товары - Данные для доступа</h3>
+      ${digitalItems
+        .map(
+          (item) => `
+        <div style="background-color: white; border-radius: 6px; padding: 15px; margin-bottom: 15px; border-left: 4px solid #1976d2;">
+          <h4 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">${
+            item.name
+          }</h4>
+          ${
+            item.digitalData && item.digitalData.platform
+              ? `
+            <p style="margin: 5px 0; color: #666;"><strong>Платформа:</strong> ${item.digitalData.platform}</p>
+          `
+              : ""
+          }
+          ${
+            item.digitalData &&
+            item.digitalData.credentials &&
+            item.digitalData.credentials.length > 0
+              ? `
+            <div style="margin-top: 10px;">
+              <p style="margin: 5px 0; color: #666; font-weight: bold;">Данные для входа:</p>
+              ${item.digitalData.credentials
+                .map(
+                  (cred, index) => `
+                <div style="background-color: #f5f5f5; padding: 10px; border-radius: 4px; margin: 5px 0; font-family: monospace;">
+                  <p style="margin: 2px 0; color: #333;"><strong>Логин:</strong> ${cred.login}</p>
+                  <p style="margin: 2px 0; color: #333;"><strong>Пароль:</strong> ${cred.password}</p>
+                </div>
+              `
+                )
+                .join("")}
+            </div>
+          `
+              : `
+            <p style="color: #f57c00; font-style: italic;">Данные доступа будут отправлены дополнительно в течение 1-2 часов.</p>
+          `
+          }
+        </div>
+      `
+        )
+        .join("")}
+      <div style="background-color: #fff3e0; border-radius: 6px; padding: 15px; border-left: 4px solid #ff9800;">
+        <p style="margin: 0; color: #e65100; font-weight: bold;">⚠️ Важно:</p>
+        <ul style="margin: 10px 0; padding-left: 20px; color: #bf360c;">
+          <li>Сохраните данные доступа в надежном месте</li>
+          <li>Не передавайте логин и пароль третьим лицам</li>
+          <li>При возникновении проблем с доступом свяжитесь с поддержкой</li>
+        </ul>
+      </div>
+    </div>
+  `
+      : "";
+
+  // Формируем секцию с физическими товарами
+  const physicalItemsSection =
+    physicalItems.length > 0
+      ? `
+    <div style="background-color: #f3e5f5; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+      <h3 style="color: #7b1fa2; margin: 0 0 15px 0; font-size: 18px;">📦 Физические товары - Доставка</h3>
+      <div style="background-color: white; border-radius: 6px; padding: 15px; border-left: 4px solid #7b1fa2;">
+        <p style="margin: 0 0 10px 0; color: #333; font-size: 16px; font-weight: bold;">Ваш заказ принят в обработку!</p>
+        <p style="margin: 5px 0; color: #666;">Наш менеджер свяжется с вами в ближайшее время для:</p>
+        <ul style="margin: 10px 0; padding-left: 20px; color: #666;">
+          <li>Подтверждения заказа и уточнения деталей</li>
+          <li>Согласования удобного времени и места доставки</li>
+          <li>Информирования о статусе обработки заказа</li>
+        </ul>
+        <div style="background-color: #e8f5e8; border-radius: 4px; padding: 10px; margin-top: 15px;">
+          <p style="margin: 0; color: #2e7d32; font-weight: bold;">📞 Ожидайте звонка в течение 1-2 часов!</p>
+        </div>
+      </div>
+    </div>
+  `
+      : "";
 
   const mailOptions = {
     from: `GoldGames <${process.env.NEXT_FEEDBACK_MAIL}>`,
@@ -93,6 +188,10 @@ export async function sendOrderConfirmationEmail(orderData) {
               <h3 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">📋 Детали заказа</h3>
               ${itemsTable}
             </div>
+            
+            <!-- Секции для разных типов товаров -->
+            ${digitalItemsSection}
+            ${physicalItemsSection}
             
             <!-- Контактная информация -->
             <div style="background-color: #e3f2fd; border-radius: 8px; padding: 20px; margin-bottom: 30px;">

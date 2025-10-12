@@ -2,6 +2,91 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendOrderConfirmationEmail } from "@/app/utils/sendEmail";
 import connectDB from "@/lib/mongodb";
 import Order from "@/models/Order";
+import DigitalCopy from "@/models/DigitalCopy";
+import Game from "@/models/Game";
+
+// Функция для обработки цифровых товаров
+async function processDigitalItems(order) {
+  const processedItems = [];
+
+  for (const item of order.items) {
+    if (item.type === "digital") {
+      try {
+        // Находим цифровые копии для этого товара
+        const digitalCopies = await DigitalCopy.find({
+          gameId: item.id,
+          isActive: true,
+          "credentials.isActive": true,
+        }).populate("gameId");
+
+        if (digitalCopies.length > 0) {
+          const digitalCopy = digitalCopies[0]; // Берем первую доступную копию
+          const availableCredentials = digitalCopy.credentials.filter(
+            (cred) => cred.isActive
+          );
+
+          if (availableCredentials.length >= item.quantity) {
+            // Назначаем учетные данные для заказа
+            const assignedCredentials = availableCredentials.slice(
+              0,
+              item.quantity
+            );
+
+            // Обновляем товар в заказе с данными доступа
+            const updatedItem = {
+              ...item,
+              digitalData: {
+                platform: digitalCopy.platform,
+                credentials: assignedCredentials.map((cred) => ({
+                  login: cred.login,
+                  password: cred.password,
+                  assignedAt: new Date(),
+                })),
+              },
+            };
+
+            // Деактивируем использованные учетные данные
+            for (let i = 0; i < item.quantity; i++) {
+              availableCredentials[i].isActive = false;
+            }
+
+            await digitalCopy.save();
+            processedItems.push(updatedItem);
+
+            console.log(
+              `✅ Назначены учетные данные для ${item.title}: ${item.quantity} шт.`
+            );
+          } else {
+            console.log(
+              `⚠️ Недостаточно доступных учетных данных для ${item.title}`
+            );
+            processedItems.push({
+              ...item,
+              digitalData: {
+                platform: digitalCopy.platform,
+                credentials: [],
+              },
+            });
+          }
+        } else {
+          console.log(`❌ Цифровые копии не найдены для товара ${item.title}`);
+          processedItems.push(item);
+        }
+      } catch (error) {
+        console.error(
+          `❌ Ошибка при обработке цифрового товара ${item.title}:`,
+          error
+        );
+        processedItems.push(item);
+      }
+    } else {
+      // Физический товар - оставляем как есть
+      processedItems.push(item);
+    }
+  }
+
+  return processedItems;
+}
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -51,6 +136,14 @@ export async function GET(request) {
         status: order.status,
         totalPrice: order.totalPrice,
       });
+
+      // Обрабатываем цифровые товары и назначаем учетные данные
+      console.log("🎮 Обработка цифровых товаров...");
+      const processedItems = await processDigitalItems(order);
+
+      // Обновляем заказ с обработанными товарами
+      order.items = processedItems;
+      await order.save();
 
       // Отправляем email с подтверждением заказа, если еще не отправляли
       if (!order.emailSent && order.contactData?.email) {
