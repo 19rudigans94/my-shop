@@ -59,6 +59,30 @@ export default function FailedPage() {
           icon: "❌",
           color: "gray",
         },
+        order_not_found: {
+          title: "Заказ не найден",
+          description: "Не удалось найти информацию о вашем заказе в системе",
+          icon: "🔍",
+          color: "orange",
+        },
+        invalid_request: {
+          title: "Неверный запрос",
+          description: "Получены некорректные данные о платеже",
+          icon: "⚠️",
+          color: "red",
+        },
+        update_failed: {
+          title: "Ошибка обновления",
+          description: "Не удалось обновить статус заказа в системе",
+          icon: "🔄",
+          color: "red",
+        },
+        system_error: {
+          title: "Системная ошибка",
+          description: "Произошла внутренняя ошибка системы",
+          icon: "🛠️",
+          color: "red",
+        },
         default: {
           title: "Ошибка оплаты",
           description: "Произошла неизвестная ошибка при обработке платежа",
@@ -225,36 +249,74 @@ export default function FailedPage() {
                   Что можно сделать?
                 </h3>
                 <div className="space-y-3 text-sm text-gray-600 dark:text-gray-300">
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                      1
-                    </div>
-                    <p>Проверьте данные вашей карты и попробуйте еще раз</p>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                      2
-                    </div>
-                    <p>
-                      Попробуйте использовать другую карту или способ оплаты
-                    </p>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                      3
-                    </div>
-                    <p>
-                      Обратитесь в ваш банк для уточнения причины отклонения
-                    </p>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                      4
-                    </div>
-                    <p>
-                      Свяжитесь с нашей поддержкой, если проблема повторяется
-                    </p>
-                  </div>
+                  {errorCode === "order_not_found" ? (
+                    <>
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          1
+                        </div>
+                        <p>Создайте новый заказ с теми же товарами</p>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          2
+                        </div>
+                        <p>Проверьте, что товары еще есть в наличии</p>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          3
+                        </div>
+                        <p>
+                          Обратитесь в поддержку с номером заказа, если он у вас
+                          есть
+                        </p>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          4
+                        </div>
+                        <p>
+                          Возможно, заказ был создан, но данные не сохранились -
+                          свяжитесь с нами
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          1
+                        </div>
+                        <p>Проверьте данные вашей карты и попробуйте еще раз</p>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          2
+                        </div>
+                        <p>
+                          Попробуйте использовать другую карту или способ оплаты
+                        </p>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          3
+                        </div>
+                        <p>
+                          Обратитесь в ваш банк для уточнения причины отклонения
+                        </p>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          4
+                        </div>
+                        <p>
+                          Свяжитесь с нашей поддержкой, если проблема
+                          повторяется
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
