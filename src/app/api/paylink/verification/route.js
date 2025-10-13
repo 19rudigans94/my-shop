@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Order from "@/models/Order";
 
-export async function GET(request) {
+async function handleVerification(request) {
   try {
+    console.log("🔄 PayLink verification callback получен");
+    console.log("📍 URL:", request.url);
+    console.log("🌐 Headers:", Object.fromEntries(request.headers.entries()));
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const uid = searchParams.get("uid");
@@ -12,6 +16,12 @@ export async function GET(request) {
     const amount = searchParams.get("amount");
     const errorCode = searchParams.get("error_code");
     const errorMessage = searchParams.get("error_message");
+
+    // Логируем все параметры, которые пришли от PayLink
+    console.log(
+      "📋 Все параметры от PayLink:",
+      Object.fromEntries(searchParams.entries())
+    );
 
     console.log("🔍 Verification request:", {
       status,
@@ -157,4 +167,13 @@ export async function GET(request) {
       )
     );
   }
+}
+
+// Экспортируем обработчики для GET и POST методов
+export async function GET(request) {
+  return handleVerification(request);
+}
+
+export async function POST(request) {
+  return handleVerification(request);
 }

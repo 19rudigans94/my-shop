@@ -21,7 +21,18 @@ export async function POST(request) {
     // Базовые переменные окружения
     const shopSecret = process.env.PAYLINK_SHOP_SECRET;
     const shopId = process.env.PAYLINK_SHOP_ID;
-    const returnUrl = process.env.PAYLINK_RETURN_URL;
+    let returnUrl = process.env.PAYLINK_RETURN_URL;
+
+    // Если PAYLINK_RETURN_URL не установлен, формируем автоматически
+    if (!returnUrl) {
+      const protocol = request.headers.get("x-forwarded-proto") || "https";
+      const host = request.headers.get("host") || "goldgames.kz";
+      returnUrl = `${protocol}://${host}/api/paylink/verification`;
+      console.log(
+        "⚠️ PAYLINK_RETURN_URL не установлен, используем автоматический:",
+        returnUrl
+      );
+    }
 
     console.log("🔗 Return URL:", returnUrl);
 
