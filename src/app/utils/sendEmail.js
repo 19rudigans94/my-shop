@@ -156,12 +156,28 @@ export async function sendOrderConfirmationEmail(orderData) {
     `,
   };
 
+  console.log("📧 Отправка email клиенту:", {
+    from: mailOptions.from,
+    to: mailOptions.to,
+    subject: mailOptions.subject,
+  });
+
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log("Email отправлен успешно:", info.response);
+    console.log("✅ Email клиенту отправлен успешно:", {
+      messageId: info.messageId,
+      response: info.response,
+      accepted: info.accepted,
+      rejected: info.rejected,
+    });
     return true;
   } catch (error) {
-    console.error("Ошибка при отправке email:", error);
+    console.error("❌ Ошибка при отправке email клиенту:", {
+      error: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+    });
     return false;
   }
 }
@@ -302,12 +318,28 @@ export async function sendManagerNotificationEmail(orderData) {
     `,
   };
 
+  console.log("📧 Отправка email менеджеру:", {
+    from: mailOptions.from,
+    to: mailOptions.to,
+    subject: mailOptions.subject,
+  });
+
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log("Email менеджеру отправлен успешно:", info.response);
+    console.log("✅ Email менеджеру отправлен успешно:", {
+      messageId: info.messageId,
+      response: info.response,
+      accepted: info.accepted,
+      rejected: info.rejected,
+    });
     return true;
   } catch (error) {
-    console.error("Ошибка при отправке email менеджеру:", error);
+    console.error("❌ Ошибка при отправке email менеджеру:", {
+      error: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+    });
     return false;
   }
 }
