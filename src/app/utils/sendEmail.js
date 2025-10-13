@@ -33,15 +33,42 @@ export async function sendOrderConfirmationEmail(orderData) {
           .map(
             (item) => `
           <tr>
-            <td style="padding: 12px; border: 1px solid #dee2e6;">${
-              item.name || "Товар"
-            }</td>
+            <td style="padding: 12px; border: 1px solid #dee2e6;">
+              ${item.name || "Товар"}
+              ${
+                item.platform
+                  ? `<br><small style="color: #666;">${item.platform}</small>`
+                  : ""
+              }
+              ${
+                item.digitalKeys
+                  ? `<br><span style="color: #28a745; font-weight: bold;">🔑 Цифровая копия</span>`
+                  : ""
+              }
+            </td>
             <td style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">${
               item.quantity
             }</td>
             <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${item.price.toLocaleString()} ₸</td>
             <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${item.total.toLocaleString()} ₸</td>
           </tr>
+          ${
+            item.digitalKeys
+              ? `
+          <tr>
+            <td colspan="4" style="padding: 12px; border: 1px solid #dee2e6; background-color: #f8f9fa;">
+              <strong>🔑 Ключи активации:</strong><br>
+              ${item.digitalKeys
+                .map(
+                  (key) =>
+                    `<code style="background: #e9ecef; padding: 2px 4px; margin: 2px; display: inline-block; font-family: monospace;">${key}</code>`
+                )
+                .join("<br>")}
+            </td>
+          </tr>
+          `
+              : ""
+          }
         `
           )
           .join("")}
@@ -55,6 +82,39 @@ export async function sendOrderConfirmationEmail(orderData) {
     </table>
   `;
 
+  // Формируем дополнительную информацию в зависимости от типа товаров
+  let additionalInfo = "";
+
+  if (order.hasDigitalItems && order.hasPhysicalItems) {
+    additionalInfo = `
+      <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin: 20px 0; border-radius: 5px;">
+        <h4 style="color: #856404; margin: 0 0 10px 0;">📦 Смешанный заказ</h4>
+        <p style="color: #856404; margin: 0;">
+          Ваш заказ содержит как цифровые, так и физические товары. Цифровые ключи указаны выше. 
+          По физическим товарам с вами свяжется наш менеджер для уточнения деталей доставки.
+        </p>
+      </div>
+    `;
+  } else if (order.hasDigitalItems) {
+    additionalInfo = `
+      <div style="background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; margin: 20px 0; border-radius: 5px;">
+        <h4 style="color: #155724; margin: 0 0 10px 0;">🔑 Цифровые товары</h4>
+        <p style="color: #155724; margin: 0;">
+          Все ваши цифровые ключи указаны в таблице выше. Сохраните это письмо - оно содержит ваши ключи активации.
+        </p>
+      </div>
+    `;
+  } else if (order.hasPhysicalItems) {
+    additionalInfo = `
+      <div style="background-color: #cce7ff; border: 1px solid #99d6ff; padding: 15px; margin: 20px 0; border-radius: 5px;">
+        <h4 style="color: #004085; margin: 0 0 10px 0;">📦 Физические товары</h4>
+        <p style="color: #004085; margin: 0;">
+          Наш менеджер свяжется с вами в ближайшее время для уточнения деталей доставки и передачи товара.
+        </p>
+      </div>
+    `;
+  }
+
   const mailOptions = {
     from: `GoldGames <${process.env.NEXT_FEEDBACK_MAIL}>`,
     to: customer.email,
@@ -63,21 +123,35 @@ export async function sendOrderConfirmationEmail(orderData) {
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #333; text-align: center;">Спасибо за ваш заказ!</h2>
         <p style="color: #666;">Здравствуйте, ${customer.name}!</p>
-        <p style="color: #666;">Ваш заказ #${orderId} успешно оформлен.</p>
+        <p style="color: #666;">Ваш заказ #${orderId} успешно оплачен ${
+      order.orderDate ? `(${order.orderDate})` : ""
+    }.</p>
         
         <h3 style="color: #333; margin-top: 30px;">Детали заказа:</h3>
         ${itemsTable}
+        
+        ${additionalInfo}
         
         <h3 style="color: #333; margin-top: 30px;">Контактная информация:</h3>
         <p style="color: #666;">
           <strong>Имя:</strong> ${customer.name}<br>
           <strong>Телефон:</strong> ${customer.phone}<br>
           <strong>Email:</strong> ${customer.email}
+          ${
+            order.paymentId
+              ? `<br><strong>ID платежа:</strong> ${order.paymentId}`
+              : ""
+          }
         </p>
         
-        <p style="color: #666; margin-top: 30px; text-align: center;">
-          Если у вас есть вопросы, пожалуйста, свяжитесь с нами.
-        </p>
+        <div style="background-color: #f8f9fa; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0;">
+          <h4 style="color: #155724; margin: 0 0 10px 0;">📞 Поддержка</h4>
+          <p style="color: #155724; margin: 0;">
+            WhatsApp: <a href="https://wa.me/77477048081" style="color: #155724;">+7 747 704 80 81</a><br>
+            Email: <a href="mailto:info@goldgames.kz" style="color: #155724;">info@goldgames.kz</a><br>
+            Время работы: ПН-ВС с 9:00 до 21:00 (GMT+6)
+          </p>
+        </div>
       </div>
     `,
   };

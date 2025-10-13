@@ -118,6 +118,16 @@ export default function CartSummary() {
         },
       };
 
+      // Сохраняем данные корзины в localStorage для последующего использования
+      const orderData = {
+        ...cartData,
+        timestamp: new Date().toISOString(),
+        orderDate: new Date().toLocaleString("ru-RU"),
+      };
+
+      localStorage.setItem("pendingOrder", JSON.stringify(orderData));
+      console.log("💾 Данные заказа сохранены в localStorage:", orderData);
+
       const result = await createPayLinkProduct(cartData);
 
       if (result?.pay_url) {
