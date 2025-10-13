@@ -11,6 +11,8 @@ export async function GET(request) {
     const token = searchParams.get("token");
     const paymentId = searchParams.get("paymentId");
     const amount = searchParams.get("amount");
+    const errorCode = searchParams.get("error_code");
+    const errorMessage = searchParams.get("error_message");
 
     console.log("🔍 Verification request:", {
       status,
@@ -18,6 +20,8 @@ export async function GET(request) {
       token,
       paymentId,
       amount,
+      errorCode,
+      errorMessage,
     });
 
     if (!uid) {
@@ -56,9 +60,9 @@ export async function GET(request) {
         });
 
         console.log("✅ Заказ успешно обновлен:", {
-          uid: updatedOrder.uid,
-          status: updatedOrder.status,
-          email: updatedOrder.contactData.email,
+          id: updatedOrder.unifiedId,
+          status: updatedOrder.unifiedStatus,
+          email: updatedOrder.unifiedEmail,
         });
 
         // Отправляем email с подтверждением
@@ -66,20 +70,22 @@ export async function GET(request) {
           // Адаптируем данные заказа под формат, ожидаемый функцией sendOrderConfirmationEmail
           const emailData = {
             customer: {
-              name: updatedOrder.contactData.email.split("@")[0], // Используем часть email как имя, если имя не указано
-              phone: updatedOrder.contactData.phone,
-              email: updatedOrder.contactData.email,
+              name:
+                updatedOrder.customerInfo?.name ||
+                updatedOrder.unifiedEmail.split("@")[0], // Используем имя или часть email
+              phone: updatedOrder.unifiedPhone,
+              email: updatedOrder.unifiedEmail,
             },
             order: {
               items: updatedOrder.items.map((item) => ({
-                name: item.title,
+                name: item.title || item.name,
                 quantity: item.quantity,
                 price: item.price,
                 total: item.total,
               })),
-              totalAmount: updatedOrder.totalPrice,
+              totalAmount: updatedOrder.unifiedTotalPrice,
             },
-            orderId: updatedOrder.uid,
+            orderId: updatedOrder.unifiedId,
           };
 
           await sendOrderConfirmationEmail(emailData);
@@ -92,7 +98,7 @@ export async function GET(request) {
         // Перенаправляем на страницу успеха с данными заказа
         return NextResponse.redirect(
           new URL(
-            `/success?uid=${uid}&amount=${updatedOrder.totalPrice}`,
+            `/success?uid=${uid}&amount=${updatedOrder.unifiedTotalPrice}`,
             request.url
           )
         );
@@ -106,21 +112,61 @@ export async function GET(request) {
         );
       }
     } else {
-      // Обновляем статус заказа как неуспешный
+      // Определяем тип ошибки на основе статуса и кода ошибки
+      let errorType = "payment_failed";
+      let userMessage = "Платеж не прошел";
+
+      // Обработка специфичных кодов ошибок PayLink
+      if (errorCode) {
+        switch (errorCode) {
+          case "F.0998":
+            errorType = "payment_cancelled";
+            userMessage = "Платеж отменен или не завершен";
+            break;
+          case "F.0001":
+            errorType = "insufficient_funds";
+            userMessage = "Недостаточно средств на карте";
+            break;
+          case "F.0002":
+            errorType = "card_declined";
+            userMessage = "Карта отклонена банком";
+            break;
+          case "F.0003":
+            errorType = "expired_card";
+            userMessage = "Срок действия карты истек";
+            break;
+          case "F.0004":
+            errorType = "invalid_card";
+            userMessage = "Неверные данные карты";
+            break;
+          default:
+            userMessage = errorMessage || "Платеж не прошел";
+        }
+      }
+
+      // Обновляем статус заказа как неуспешный с детальной информацией
       await Order.updateStatus(uid, "failed", {
-        errorMessage: `Payment status: ${status}`,
+        errorMessage: `Payment status: ${status}, Error code: ${errorCode}, Message: ${errorMessage}`,
+        paymentData: {
+          errorCode,
+          errorMessage,
+          status,
+        },
         processedAt: new Date(),
       });
 
-      console.log(`❌ Платеж неуспешен. UID: ${uid}, Status: ${status}`);
-
-      // Перенаправляем на страницу ошибки с деталями
-      return NextResponse.redirect(
-        new URL(
-          `/failed?error=payment_failed&message=Платеж не прошел&uid=${uid}`,
-          request.url
-        )
+      console.log(
+        `❌ Платеж неуспешен. UID: ${uid}, Status: ${status}, Error: ${errorCode}`
       );
+
+      // Перенаправляем на страницу ошибки с детальными данными
+      const failedUrl = new URL("/failed", request.url);
+      failedUrl.searchParams.set("error", errorType);
+      failedUrl.searchParams.set("message", userMessage);
+      failedUrl.searchParams.set("uid", uid);
+      if (errorCode) failedUrl.searchParams.set("code", errorCode);
+
+      return NextResponse.redirect(failedUrl);
     }
   } catch (error) {
     console.error("❌ Критическая ошибка в verification:", error);
