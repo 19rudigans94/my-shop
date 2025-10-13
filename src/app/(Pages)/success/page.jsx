@@ -57,7 +57,15 @@ function SuccessPageContent() {
             const emailResult = await emailResponse.json();
 
             if (emailResult.success) {
-              console.log("✅ Email успешно отправлен");
+              console.log("✅ Email отправлены:", emailResult.results);
+              console.log(
+                "📧 Клиенту:",
+                emailResult.results?.customerEmail ? "✅" : "❌"
+              );
+              console.log(
+                "📧 Менеджеру:",
+                emailResult.results?.managerEmail ? "✅" : "❌"
+              );
             } else {
               console.error("❌ Ошибка отправки email:", emailResult.error);
             }
