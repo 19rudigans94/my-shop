@@ -23,9 +23,18 @@ function SuccessPageContent() {
       // Анимация конфетти при загрузке страницы
       setShowConfetti(true);
 
+      // Небольшая задержка, чтобы убедиться, что localStorage доступен
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       try {
         // Получаем данные заказа из localStorage
         const pendingOrderData = localStorage.getItem("pendingOrder");
+
+        console.log("🔍 Проверка localStorage:", {
+          hasPendingOrder: !!pendingOrderData,
+          allKeys: Object.keys(localStorage),
+          pendingOrderLength: pendingOrderData?.length || 0,
+        });
 
         console.log("🔍 Поиск данных заказа:", {
           hasLocalStorage: !!pendingOrderData,
@@ -41,8 +50,32 @@ function SuccessPageContent() {
             orderData
           );
 
+          // Проверяем структуру данных
+          if (!orderData.contactData || !orderData.contactData.email) {
+            console.error("❌ Отсутствуют контактные данные в localStorage:", {
+              hasContactData: !!orderData.contactData,
+              email: orderData.contactData?.email,
+              phone: orderData.contactData?.phone,
+            });
+          } else {
+            console.log("✅ Контактные данные найдены:", {
+              email: orderData.contactData.email,
+              phone: orderData.contactData.phone,
+            });
+          }
+
           // Отправляем email с подтверждением заказа
           try {
+            console.log("📧 Отправка запроса на email API...");
+            console.log("📤 Данные для отправки:", {
+              orderData: {
+                items: orderData.items?.length || 0,
+                totalPrice: orderData.totalPrice,
+                contactData: orderData.contactData,
+              },
+              paymentId: paymentId || orderId,
+            });
+
             const emailResponse = await fetch("/api/send-order-email", {
               method: "POST",
               headers: {
@@ -52,6 +85,12 @@ function SuccessPageContent() {
                 orderData,
                 paymentId: paymentId || orderId,
               }),
+            });
+
+            console.log("📨 Ответ от email API:", {
+              status: emailResponse.status,
+              statusText: emailResponse.statusText,
+              ok: emailResponse.ok,
             });
 
             const emailResult = await emailResponse.json();
@@ -119,6 +158,43 @@ function SuccessPageContent() {
 
   const handleGoHome = () => {
     router.push("/");
+  };
+
+  // Функция для тестирования отправки email вручную
+  const handleTestEmail = async () => {
+    try {
+      console.log("🧪 Ручное тестирование email...");
+
+      const pendingOrderData = localStorage.getItem("pendingOrder");
+
+      if (!pendingOrderData) {
+        console.error("❌ Нет данных в localStorage для тестирования");
+        return;
+      }
+
+      const orderData = JSON.parse(pendingOrderData);
+
+      console.log(
+        "📤 Отправка тестового email с реальными данными:",
+        orderData
+      );
+
+      const response = await fetch("/api/send-order-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          orderData,
+          paymentId: paymentId || orderId || "MANUAL-TEST",
+        }),
+      });
+
+      const result = await response.json();
+      console.log("📧 Результат тестовой отправки:", result);
+    } catch (error) {
+      console.error("❌ Ошибка тестирования email:", error);
+    }
   };
 
   if (isLoading) {
@@ -339,6 +415,18 @@ function SuccessPageContent() {
                 На главную
               </button>
             </div>
+
+            {/* Кнопка для тестирования email (только в development) */}
+            {process.env.NODE_ENV === "development" && (
+              <div className="mt-4">
+                <button
+                  onClick={handleTestEmail}
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200"
+                >
+                  🧪 Тест отправки email (dev only)
+                </button>
+              </div>
+            )}
 
             {/* Контактная информация */}
             <div className="mt-8 text-center text-sm text-gray-600 dark:text-gray-300">
