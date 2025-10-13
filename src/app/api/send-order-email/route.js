@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { sendOrderConfirmationEmail } from "@/app/utils/sendEmail";
+import {
+  sendOrderConfirmationEmail,
+  sendManagerNotificationEmail,
+} from "@/app/utils/sendEmail";
 import connectDB from "@/lib/mongodb";
 import DigitalCopy from "@/models/DigitalCopy";
 
@@ -101,19 +104,29 @@ export async function POST(request) {
       orderId: paymentId || `ORDER-${Date.now()}`,
     };
 
-    // Отправляем email
-    const emailSent = await sendOrderConfirmationEmail(emailData);
+    // Отправляем email клиенту
+    const customerEmailSent = await sendOrderConfirmationEmail(emailData);
 
-    if (emailSent) {
-      console.log("✅ Email успешно отправлен");
+    // Отправляем email менеджеру
+    const managerEmailSent = await sendManagerNotificationEmail(emailData);
+
+    const results = {
+      customerEmail: customerEmailSent,
+      managerEmail: managerEmailSent,
+    };
+
+    console.log("📧 Результаты отправки email:", results);
+
+    if (customerEmailSent || managerEmailSent) {
       return NextResponse.json({
         success: true,
-        message: "Email отправлен успешно",
+        message: "Email отправлены",
+        results,
         hasDigitalItems,
         hasPhysicalItems,
       });
     } else {
-      throw new Error("Не удалось отправить email");
+      throw new Error("Не удалось отправить ни одно письмо");
     }
   } catch (error) {
     console.error("❌ Ошибка при отправке email:", error);
