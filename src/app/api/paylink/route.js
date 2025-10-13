@@ -27,9 +27,9 @@ export async function POST(request) {
     if (!returnUrl) {
       const protocol = request.headers.get("x-forwarded-proto") || "https";
       const host = request.headers.get("host") || "goldgames.kz";
-      returnUrl = `${protocol}://${host}/api/paylink/verification`;
+      returnUrl = `${protocol}://${host}/api/paylink/simple-verification`;
       console.log(
-        "⚠️ PAYLINK_RETURN_URL не установлен, используем автоматический:",
+        "⚠️ PAYLINK_RETURN_URL не установлен, используем простой verification:",
         returnUrl
       );
     }
