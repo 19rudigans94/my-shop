@@ -5,6 +5,7 @@ import {
 } from "@/app/utils/sendEmail";
 import connectDB from "@/lib/mongodb";
 import DigitalCopy from "@/models/DigitalCopy";
+import nodemailer from "nodemailer";
 
 export async function POST(request) {
   try {
@@ -15,6 +16,72 @@ export async function POST(request) {
       itemsCount: orderData.items.length,
       paymentId,
     });
+
+    // Проверяем переменные окружения для SMTP
+    const requiredEnvVars = [
+      "NEXT_SMTP_HOST",
+      "NEXT_SMTP_PORT",
+      "NEXT_SMTP_USER",
+      "NEXT_SMTP_PASSWORD",
+      "NEXT_FEEDBACK_MAIL",
+    ];
+
+    const missingVars = requiredEnvVars.filter(
+      (varName) => !process.env[varName]
+    );
+
+    if (missingVars.length > 0) {
+      console.error("❌ Отсутствуют переменные окружения:", missingVars);
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Отсутствуют переменные окружения: ${missingVars.join(", ")}`,
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log("✅ SMTP настройки:", {
+      host: process.env.NEXT_SMTP_HOST,
+      port: process.env.NEXT_SMTP_PORT,
+      user: process.env.NEXT_SMTP_USER ? "✅ Установлен" : "❌ Не установлен",
+      password: process.env.NEXT_SMTP_PASSWORD
+        ? "✅ Установлен"
+        : "❌ Не установлен",
+      from: process.env.NEXT_FEEDBACK_MAIL,
+    });
+
+    // Тестируем соединение с SMTP сервером
+    try {
+      const testTransporter = nodemailer.createTransport({
+        host: process.env.NEXT_SMTP_HOST,
+        port: process.env.NEXT_SMTP_PORT,
+        secure: true,
+        auth: {
+          user: process.env.NEXT_SMTP_USER,
+          pass: process.env.NEXT_SMTP_PASSWORD,
+        },
+        tls: {
+          rejectUnauthorized: false,
+        },
+      });
+
+      await testTransporter.verify();
+      console.log("✅ SMTP соединение успешно проверено");
+    } catch (smtpError) {
+      console.error("❌ Ошибка соединения с SMTP сервером:", {
+        error: smtpError.message,
+        code: smtpError.code,
+        command: smtpError.command,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Ошибка SMTP соединения: ${smtpError.message}`,
+        },
+        { status: 500 }
+      );
+    }
 
     // Подключаемся к базе данных
     await connectDB();
