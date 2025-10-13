@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 import { getTimePlus30Minutes } from "../../utils/lifeTime";
-import connectDB from "@/lib/mongodb";
-import Order from "@/models/Order";
 
 export async function POST(request) {
   try {
@@ -24,11 +22,6 @@ export async function POST(request) {
     const returnUrl = process.env.PAYLINK_RETURN_URL;
 
     console.log("🔗 Return URL:", returnUrl);
-    console.log(
-      "🏪 Shop ID:",
-      shopId ? `${shopId.substring(0, 8)}...` : "НЕ УСТАНОВЛЕН"
-    );
-    console.log("🔑 Shop Secret:", shopSecret ? "УСТАНОВЛЕН" : "НЕ УСТАНОВЛЕН");
 
     // Проверяем обязательные переменные
     if (!shopId || !shopSecret) {
@@ -99,48 +92,6 @@ export async function POST(request) {
     }
 
     const result = await response.json();
-
-    // Сохраняем данные заказа в базу данных для последующего использования при успешной оплате
-    if (result && result.uid) {
-      try {
-        await connectDB();
-
-        const orderData = {
-          uid: result.uid,
-          items: cartData.items.map((item) => ({
-            id: item.id,
-            title: item.title,
-            price: item.price,
-            quantity: item.quantity,
-            total: item.price * item.quantity,
-            category: item.category,
-            image: item.image,
-            // Определяем тип товара на основе категории или других признаков
-            type:
-              item.category === "games" && item.platform
-                ? "digital"
-                : "physical",
-          })),
-          totalPrice: cartData.totalPrice,
-          totalItems: cartData.totalItems,
-          contactData: cartData.contactData,
-          status: "pending",
-        };
-
-        const order = new Order(orderData);
-        await order.save();
-
-        console.log("💾 Заказ успешно сохранен в БД:", {
-          uid: result.uid,
-          totalPrice: cartData.totalPrice,
-          email: cartData.contactData?.email,
-        });
-      } catch (dbError) {
-        console.error("❌ Ошибка при сохранении заказа в БД:", dbError);
-        // Продолжаем выполнение, даже если не удалось сохранить в БД
-      }
-    }
-
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     return NextResponse.json(

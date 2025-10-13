@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import useCartStore from "@/app/store/useCartStore";
 
-function FailedPageContent() {
+export default function FailedPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { items, getTotalPrice } = useCartStore();
@@ -328,28 +328,5 @@ function FailedPageContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-// Компонент загрузки для Suspense
-function LoadingFallback() {
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-red-500 mx-auto mb-4"></div>
-        <p className="text-lg text-gray-600 dark:text-gray-300">
-          Загрузка страницы ошибки...
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// Основной экспортируемый компонент с Suspense boundary
-export default function FailedPage() {
-  return (
-    <Suspense fallback={<LoadingFallback />}>
-      <FailedPageContent />
-    </Suspense>
   );
 }
