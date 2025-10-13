@@ -6,7 +6,6 @@ const OrderSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      index: true,
     },
     items: [
       {
@@ -95,8 +94,7 @@ const OrderSchema = new mongoose.Schema(
   }
 );
 
-// Индексы для быстрого поиска
-OrderSchema.index({ uid: 1 });
+// Индексы для быстрого поиска (uid уже имеет unique: true, поэтому не добавляем отдельный индекс)
 OrderSchema.index({ status: 1 });
 OrderSchema.index({ "contactData.email": 1 });
 OrderSchema.index({ createdAt: -1 });
