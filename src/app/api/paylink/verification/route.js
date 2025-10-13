@@ -49,46 +49,15 @@ async function handleVerification(request) {
         "📧 Email будет отправлен на странице success на основе данных из localStorage"
       );
 
-      // Пытаемся найти и обновить заказ в базе данных (необязательно)
-      try {
-        await connectDB();
-        const order = await Order.findByUid(uid);
+      // Простое перенаправление без зависимости от БД для избежания зависания
+      const successUrl = new URL("/success", request.url);
+      successUrl.searchParams.set("uid", uid);
+      if (amount) successUrl.searchParams.set("amount", amount);
+      if (paymentId) successUrl.searchParams.set("paymentId", paymentId);
 
-        if (order) {
-          const updatedOrder = await Order.updateStatus(uid, "successful", {
-            paymentId,
-            amount: amount ? parseFloat(amount) : order.totalPrice,
-            processedAt: new Date(),
-          });
+      console.log("🔄 Перенаправляем на:", successUrl.toString());
 
-          console.log("✅ Заказ найден и обновлен в БД:", {
-            id: updatedOrder.unifiedId,
-            status: updatedOrder.unifiedStatus,
-          });
-
-          // Перенаправляем на страницу успеха с данными из БД
-          return NextResponse.redirect(
-            new URL(
-              `/success?uid=${uid}&amount=${updatedOrder.unifiedTotalPrice}&paymentId=${paymentId}`,
-              request.url
-            )
-          );
-        } else {
-          console.log(
-            "⚠️ Заказ не найден в БД, но это не критично - используем localStorage"
-          );
-        }
-      } catch (dbError) {
-        console.error("❌ Ошибка работы с БД (не критично):", dbError);
-      }
-
-      // Перенаправляем на success в любом случае - данные будут взяты из localStorage
-      return NextResponse.redirect(
-        new URL(
-          `/success?uid=${uid}&amount=${amount}&paymentId=${paymentId}`,
-          request.url
-        )
-      );
+      return NextResponse.redirect(successUrl);
     } else {
       // Определяем тип ошибки на основе статуса и кода ошибки
       let errorType = "payment_failed";
@@ -122,28 +91,13 @@ async function handleVerification(request) {
         }
       }
 
-      // Пытаемся обновить статус заказа как неуспешный (необязательно)
-      try {
-        await connectDB();
-        const order = await Order.findByUid(uid);
-        if (order) {
-          await Order.updateStatus(uid, "failed", {
-            errorMessage: `Payment status: ${status}, Error code: ${errorCode}, Message: ${errorMessage}`,
-            paymentData: {
-              errorCode,
-              errorMessage,
-              status,
-            },
-            processedAt: new Date(),
-          });
-          console.log("✅ Статус заказа обновлен в БД как неуспешный");
-        }
-      } catch (dbError) {
-        console.error(
-          "❌ Ошибка обновления статуса в БД (не критично):",
-          dbError
-        );
-      }
+      // Логируем неуспешный платеж (БД обновление убираем для избежания зависания)
+      console.log("❌ Неуспешный платеж, детали:", {
+        uid,
+        status,
+        errorCode,
+        errorMessage,
+      });
 
       console.log(
         `❌ Платеж неуспешен. UID: ${uid}, Status: ${status}, Error: ${errorCode}`
