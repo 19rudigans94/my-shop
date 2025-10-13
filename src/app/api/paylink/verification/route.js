@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Order from "@/models/Order";
-import { sendOrderConfirmationEmail } from "@/app/utils/sendEmail";
 
 export async function GET(request) {
   try {
@@ -65,35 +64,9 @@ export async function GET(request) {
           email: updatedOrder.unifiedEmail,
         });
 
-        // Отправляем email с подтверждением
-        try {
-          // Адаптируем данные заказа под формат, ожидаемый функцией sendOrderConfirmationEmail
-          const emailData = {
-            customer: {
-              name:
-                updatedOrder.customerInfo?.name ||
-                updatedOrder.unifiedEmail.split("@")[0], // Используем имя или часть email
-              phone: updatedOrder.unifiedPhone,
-              email: updatedOrder.unifiedEmail,
-            },
-            order: {
-              items: updatedOrder.items.map((item) => ({
-                name: item.title || item.name,
-                quantity: item.quantity,
-                price: item.price,
-                total: item.total,
-              })),
-              totalAmount: updatedOrder.unifiedTotalPrice,
-            },
-            orderId: updatedOrder.unifiedId,
-          };
-
-          await sendOrderConfirmationEmail(emailData);
-          console.log("📧 Email отправлен успешно");
-        } catch (emailError) {
-          console.error("❌ Ошибка отправки email:", emailError);
-          // Не прерываем процесс, если email не отправился
-        }
+        console.log(
+          "📧 Email будет отправлен на странице success на основе данных из localStorage"
+        );
 
         // Перенаправляем на страницу успеха с данными заказа
         return NextResponse.redirect(

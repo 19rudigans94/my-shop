@@ -14,32 +14,89 @@ function SuccessPageContent() {
   const [showConfetti, setShowConfetti] = useState(false);
 
   // Получаем параметры из URL
-  const orderId = searchParams.get("orderId");
-  const paymentId = searchParams.get("paymentId");
+  const orderId = searchParams.get("orderId") || searchParams.get("uid");
+  const paymentId = searchParams.get("paymentId") || searchParams.get("uid");
   const amount = searchParams.get("amount");
 
   useEffect(() => {
-    // Анимация конфетти при загрузке страницы
-    setShowConfetti(true);
+    const handleSuccessfulPayment = async () => {
+      // Анимация конфетти при загрузке страницы
+      setShowConfetti(true);
 
-    // Сохраняем детали заказа перед очисткой корзины
-    if (items.length > 0) {
-      setOrderDetails({
-        items: [...items],
-        totalAmount: getTotalPrice(),
-        orderDate: new Date().toLocaleString("ru-RU"),
-        orderId: orderId || `ORDER-${Date.now()}`,
-        paymentId: paymentId || `PAY-${Date.now()}`,
-      });
-    }
+      try {
+        // Получаем данные заказа из localStorage
+        const pendingOrderData = localStorage.getItem("pendingOrder");
 
-    // Очищаем корзину после успешной оплаты
-    const timer = setTimeout(() => {
-      clearCart();
-      setIsLoading(false);
-    }, 1500);
+        if (pendingOrderData) {
+          const orderData = JSON.parse(pendingOrderData);
 
-    return () => clearTimeout(timer);
+          console.log(
+            "📦 Восстановлены данные заказа из localStorage:",
+            orderData
+          );
+
+          // Отправляем email с подтверждением заказа
+          try {
+            const emailResponse = await fetch("/api/send-order-email", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                orderData,
+                paymentId: paymentId || orderId,
+              }),
+            });
+
+            const emailResult = await emailResponse.json();
+
+            if (emailResult.success) {
+              console.log("✅ Email успешно отправлен");
+            } else {
+              console.error("❌ Ошибка отправки email:", emailResult.error);
+            }
+          } catch (emailError) {
+            console.error("❌ Ошибка при отправке email:", emailError);
+          }
+
+          // Устанавливаем детали заказа для отображения
+          setOrderDetails({
+            items: orderData.items,
+            totalAmount: orderData.totalPrice,
+            orderDate: orderData.orderDate,
+            orderId: paymentId || orderId || `ORDER-${Date.now()}`,
+            paymentId: paymentId || orderId || `PAY-${Date.now()}`,
+            contactData: orderData.contactData,
+          });
+
+          // Очищаем данные заказа из localStorage
+          localStorage.removeItem("pendingOrder");
+        } else if (items.length > 0) {
+          // Fallback: используем данные из корзины, если localStorage пуст
+          console.log(
+            "⚠️ Данные заказа не найдены в localStorage, используем корзину"
+          );
+          setOrderDetails({
+            items: [...items],
+            totalAmount: getTotalPrice(),
+            orderDate: new Date().toLocaleString("ru-RU"),
+            orderId: paymentId || orderId || `ORDER-${Date.now()}`,
+            paymentId: paymentId || orderId || `PAY-${Date.now()}`,
+          });
+        }
+
+        // Очищаем корзину после успешной оплаты
+        setTimeout(() => {
+          clearCart();
+          setIsLoading(false);
+        }, 1500);
+      } catch (error) {
+        console.error("❌ Ошибка при обработке успешного платежа:", error);
+        setIsLoading(false);
+      }
+    };
+
+    handleSuccessfulPayment();
   }, [items, clearCart, getTotalPrice, orderId, paymentId]);
 
   const handleContinueShopping = () => {
