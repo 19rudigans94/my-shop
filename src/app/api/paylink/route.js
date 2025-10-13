@@ -35,6 +35,12 @@ export async function POST(request) {
     }
 
     console.log("🔗 Return URL:", returnUrl);
+    console.log("🌐 Request headers:", {
+      host: request.headers.get("host"),
+      "x-forwarded-proto": request.headers.get("x-forwarded-proto"),
+      "x-forwarded-host": request.headers.get("x-forwarded-host"),
+      origin: request.headers.get("origin"),
+    });
 
     // Проверяем обязательные переменные
     if (!shopId || !shopSecret) {
@@ -53,6 +59,9 @@ export async function POST(request) {
         ?.map((item) => `${item.title} (${item.quantity}шт)`)
         .join(", ") || "Заказ из интернет-магазина";
 
+    // Формируем webhook URL для уведомлений о статусе платежа
+    const webhookUrl = returnUrl; // Используем тот же endpoint для webhook
+
     // Данные для PayLink API согласно документации
     const payload = {
       name: orderName,
@@ -65,9 +74,14 @@ export async function POST(request) {
       expired_at: expired_at, // обязательно если не immortal
       language: "ru", // двухбуквенный формат
       return_url: returnUrl,
+      webhook_url: webhookUrl, // Добавляем webhook для надежности
     };
 
     console.log("📤 Payload для PayLink:", JSON.stringify(payload, null, 2));
+    console.log("🔗 Проверьте, что PayLink может достучаться до:", returnUrl);
+    console.log(
+      "🌍 Убедитесь, что домен доступен извне и не заблокирован файрволом"
+    );
 
     // Отправляем запрос к PayLink API
     const authString = `${shopId}:${shopSecret}`;
