@@ -12,6 +12,11 @@ function SuccessPageContent() {
   const [orderDetails, setOrderDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [emailStatus, setEmailStatus] = useState({
+    sent: false,
+    loading: false,
+    error: null,
+  });
 
   // Получаем параметры из URL
   const orderId = searchParams.get("orderId") || searchParams.get("uid");
@@ -65,51 +70,80 @@ function SuccessPageContent() {
           }
 
           // Отправляем email с подтверждением заказа
-          try {
-            console.log("📧 Отправка запроса на email API...");
-            console.log("📤 Данные для отправки:", {
-              orderData: {
-                items: orderData.items?.length || 0,
-                totalPrice: orderData.totalPrice,
-                contactData: orderData.contactData,
-              },
-              paymentId: paymentId || orderId,
-            });
+          if (!emailStatus.sent) {
+            setEmailStatus((prev) => ({ ...prev, loading: true, error: null }));
 
-            const emailResponse = await fetch("/api/send-order-email", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                orderData,
+            try {
+              console.log("📧 Отправка запроса на email API...");
+              console.log("📤 Данные для отправки:", {
+                orderData: {
+                  items: orderData.items?.length || 0,
+                  totalPrice: orderData.totalPrice,
+                  contactData: orderData.contactData,
+                },
                 paymentId: paymentId || orderId,
-              }),
-            });
+              });
 
-            console.log("📨 Ответ от email API:", {
-              status: emailResponse.status,
-              statusText: emailResponse.statusText,
-              ok: emailResponse.ok,
-            });
+              const emailResponse = await fetch("/api/send-order-email", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  orderData,
+                  paymentId: paymentId || orderId,
+                }),
+              });
 
-            const emailResult = await emailResponse.json();
+              console.log("📨 Ответ от email API:", {
+                status: emailResponse.status,
+                statusText: emailResponse.statusText,
+                ok: emailResponse.ok,
+              });
 
-            if (emailResult.success) {
-              console.log("✅ Email отправлены:", emailResult.results);
-              console.log(
-                "📧 Клиенту:",
-                emailResult.results?.customerEmail ? "✅" : "❌"
-              );
-              console.log(
-                "📧 Менеджеру:",
-                emailResult.results?.managerEmail ? "✅" : "❌"
-              );
-            } else {
-              console.error("❌ Ошибка отправки email:", emailResult.error);
+              const emailResult = await emailResponse.json();
+
+              if (emailResult.success) {
+                console.log("✅ Email отправлены:", emailResult.results);
+                console.log(
+                  "📧 Клиенту:",
+                  emailResult.results?.customerEmail ? "✅" : "❌"
+                );
+                console.log(
+                  "📧 Менеджеру:",
+                  emailResult.results?.managerEmail ? "✅" : "❌"
+                );
+
+                setEmailStatus({
+                  sent: true,
+                  loading: false,
+                  error: null,
+                });
+
+                // Очищаем localStorage только после успешной отправки email
+                localStorage.removeItem("pendingOrder");
+                console.log(
+                  "🧹 localStorage очищен после успешной отправки email"
+                );
+              } else {
+                console.error("❌ Ошибка отправки email:", emailResult.error);
+                setEmailStatus({
+                  sent: false,
+                  loading: false,
+                  error: emailResult.error,
+                });
+                // НЕ очищаем localStorage при ошибке, чтобы можно было повторить попытку
+              }
+            } catch (emailError) {
+              console.error("❌ Ошибка при отправке email:", emailError);
+              setEmailStatus({
+                sent: false,
+                loading: false,
+                error: emailError.message,
+              });
             }
-          } catch (emailError) {
-            console.error("❌ Ошибка при отправке email:", emailError);
+          } else {
+            console.log("📧 Email уже был отправлен ранее");
           }
 
           // Устанавливаем детали заказа для отображения
@@ -122,8 +156,7 @@ function SuccessPageContent() {
             contactData: orderData.contactData,
           });
 
-          // Очищаем данные заказа из localStorage
-          localStorage.removeItem("pendingOrder");
+          // НЕ очищаем localStorage здесь - сделаем это после отправки email
         } else if (items.length > 0) {
           // Fallback: используем данные из корзины, если localStorage пуст
           console.log(
@@ -138,7 +171,7 @@ function SuccessPageContent() {
           });
         }
 
-        // Очищаем корзину после успешной оплаты
+        // Очищаем только корзину после успешной оплаты
         setTimeout(() => {
           clearCart();
           setIsLoading(false);
@@ -162,6 +195,8 @@ function SuccessPageContent() {
 
   // Функция для тестирования отправки email вручную
   const handleTestEmail = async () => {
+    setEmailStatus((prev) => ({ ...prev, loading: true, error: null }));
+
     try {
       console.log("🧪 Ручное тестирование email...");
 
@@ -169,6 +204,11 @@ function SuccessPageContent() {
 
       if (!pendingOrderData) {
         console.error("❌ Нет данных в localStorage для тестирования");
+        setEmailStatus({
+          sent: false,
+          loading: false,
+          error: "Нет данных в localStorage",
+        });
         return;
       }
 
@@ -192,8 +232,31 @@ function SuccessPageContent() {
 
       const result = await response.json();
       console.log("📧 Результат тестовой отправки:", result);
+
+      if (result.success) {
+        setEmailStatus({
+          sent: true,
+          loading: false,
+          error: null,
+        });
+
+        // Очищаем localStorage после успешной отправки
+        localStorage.removeItem("pendingOrder");
+        console.log("🧹 localStorage очищен после ручной отправки email");
+      } else {
+        setEmailStatus({
+          sent: false,
+          loading: false,
+          error: result.error,
+        });
+      }
     } catch (error) {
       console.error("❌ Ошибка тестирования email:", error);
+      setEmailStatus({
+        sent: false,
+        loading: false,
+        error: error.message,
+      });
     }
   };
 
@@ -416,17 +479,70 @@ function SuccessPageContent() {
               </button>
             </div>
 
-            {/* Кнопка для тестирования email (только в development) */}
-            {process.env.NODE_ENV === "development" && (
-              <div className="mt-4">
+            {/* Кнопки для диагностики email */}
+            <div className="mt-4 space-y-2">
+              {process.env.NODE_ENV === "development" && (
                 <button
                   onClick={handleTestEmail}
                   className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200"
                 >
                   🧪 Тест отправки email (dev only)
                 </button>
+              )}
+
+              {/* Показываем статус отправки email и кнопку повторной отправки */}
+              <div className="w-full">
+                {emailStatus.loading && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-center">
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-blue-700 dark:text-blue-300">
+                        Отправка email...
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {emailStatus.sent && (
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-center">
+                    <span className="text-green-700 dark:text-green-300">
+                      ✅ Email отправлены успешно
+                    </span>
+                  </div>
+                )}
+
+                {emailStatus.error && (
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                    <div className="text-red-700 dark:text-red-300 text-center mb-2">
+                      ❌ Ошибка отправки email: {emailStatus.error}
+                    </div>
+                    {typeof window !== "undefined" &&
+                      localStorage.getItem("pendingOrder") && (
+                        <button
+                          onClick={handleTestEmail}
+                          disabled={emailStatus.loading}
+                          className="w-full bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200"
+                        >
+                          🔄 Повторить отправку email
+                        </button>
+                      )}
+                  </div>
+                )}
+
+                {!emailStatus.sent &&
+                  !emailStatus.loading &&
+                  !emailStatus.error &&
+                  typeof window !== "undefined" &&
+                  localStorage.getItem("pendingOrder") && (
+                    <button
+                      onClick={handleTestEmail}
+                      className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200"
+                    >
+                      📧 Отправить email
+                    </button>
+                  )}
               </div>
-            )}
+            </div>
 
             {/* Контактная информация */}
             <div className="mt-8 text-center text-sm text-gray-600 dark:text-gray-300">
