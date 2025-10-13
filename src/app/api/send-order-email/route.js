@@ -15,6 +15,12 @@ export async function POST(request) {
       email: orderData.contactData.email,
       itemsCount: orderData.items.length,
       paymentId,
+      items: orderData.items.map((item) => ({
+        title: item.title,
+        id: item.id,
+        category: item.category,
+        platform: item.platform,
+      })),
     });
 
     // Проверяем переменные окружения для SMTP
@@ -101,39 +107,71 @@ export async function POST(request) {
         platform: item.platform,
       };
 
-      // Проверяем, является ли товар цифровым
+      // Проверяем, является ли товар потенциально цифровым (игра с платформой)
       if (item.category === "games" && item.platform) {
-        hasDigitalItems = true;
+        console.log(`🔍 Проверка цифровых ключей для игры:`, {
+          title: item.title,
+          id: item.id,
+          platform: item.platform,
+          quantity: item.quantity,
+        });
 
         // Ищем цифровые ключи для этой игры
         try {
-          const digitalCopies = await DigitalCopy.find({
+          // Ищем цифровые копии по gameId (ObjectId)
+          let digitalCopies = await DigitalCopy.find({
             gameId: item.id,
             platform: item.platform,
-            status: "available",
+            isActive: true,
           }).limit(item.quantity);
 
+          console.log(
+            `🔑 Найдено цифровых копий: ${digitalCopies.length} из ${item.quantity} нужных`
+          );
+
           if (digitalCopies.length >= item.quantity) {
-            // Добавляем ключи к товару
-            processedItem.digitalKeys = digitalCopies.map((copy) => copy.key);
+            hasDigitalItems = true;
 
-            // Помечаем ключи как проданные
-            await DigitalCopy.updateMany(
-              { _id: { $in: digitalCopies.map((copy) => copy._id) } },
-              {
-                status: "sold",
-                soldAt: new Date(),
-                soldTo: orderData.contactData.email,
-                paymentId: paymentId,
+            // Получаем доступные аккаунты (credentials) из найденных копий
+            const availableCredentials = [];
+
+            for (const copy of digitalCopies.slice(0, item.quantity)) {
+              // Берем активные credentials из каждой копии
+              const activeCredentials = copy.credentials.filter(
+                (cred) => cred.isActive
+              );
+
+              if (activeCredentials.length > 0) {
+                // Берем первый доступный аккаунт
+                const credential = activeCredentials[0];
+                availableCredentials.push({
+                  login: credential.login,
+                  password: credential.password,
+                  platform: copy.platform,
+                });
+
+                // Помечаем credential как использованный
+                credential.isActive = false;
+                await copy.save();
               }
-            );
+            }
 
-            console.log(
-              `🔑 Выдано ${digitalCopies.length} ключей для ${item.title}`
-            );
+            if (availableCredentials.length > 0) {
+              // Добавляем аккаунты к товару
+              processedItem.digitalKeys = availableCredentials;
+
+              console.log(
+                `🔑 Выдано ${availableCredentials.length} аккаунтов для ${item.title}`
+              );
+            } else {
+              console.warn(
+                `⚠️ Нет доступных аккаунтов в найденных копиях для ${item.title}`
+              );
+              hasPhysicalItems = true; // Обрабатываем как физический товар
+            }
           } else {
             console.warn(
-              `⚠️ Недостаточно ключей для ${item.title}. Нужно: ${item.quantity}, доступно: ${digitalCopies.length}`
+              `⚠️ Недостаточно цифровых копий для ${item.title}. Нужно: ${item.quantity}, доступно: ${digitalCopies.length}`
             );
             processedItem.keysAvailable = digitalCopies.length;
             processedItem.keysNeeded = item.quantity;
@@ -152,6 +190,17 @@ export async function POST(request) {
 
       processedItems.push(processedItem);
     }
+
+    // Логируем итоговые результаты анализа товаров
+    console.log("📊 Анализ товаров завершен:", {
+      hasDigitalItems,
+      hasPhysicalItems,
+      totalItems: processedItems.length,
+      digitalItemsCount: processedItems.filter((item) => item.digitalKeys)
+        .length,
+      physicalItemsCount: processedItems.filter((item) => !item.digitalKeys)
+        .length,
+    });
 
     // Формируем данные для email
     const emailData = {

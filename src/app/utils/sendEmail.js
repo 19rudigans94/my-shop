@@ -61,13 +61,22 @@ export async function sendOrderConfirmationEmail(orderData) {
               ? `
           <tr>
             <td colspan="4" style="padding: 12px; border: 1px solid #dee2e6; background-color: #f8f9fa;">
-              <strong>🔑 Ключи активации:</strong><br>
+              <strong>🔑 Данные для входа в аккаунт:</strong><br>
               ${item.digitalKeys
                 .map(
-                  (key) =>
-                    `<code style="background: #e9ecef; padding: 2px 4px; margin: 2px; display: inline-block; font-family: monospace;">${key}</code>`
+                  (account, index) =>
+                    `<div style="margin: 8px 0; padding: 8px; background: #e9ecef; border-radius: 4px;">
+                      <strong>Аккаунт ${index + 1}:</strong><br>
+                      <strong>Логин:</strong> <code style="background: #fff; padding: 2px 4px; font-family: monospace;">${
+                        account.login
+                      }</code><br>
+                      <strong>Пароль:</strong> <code style="background: #fff; padding: 2px 4px; font-family: monospace;">${
+                        account.password
+                      }</code><br>
+                      <strong>Платформа:</strong> ${account.platform}
+                    </div>`
                 )
-                .join("<br>")}
+                .join("")}
             </td>
           </tr>
           `
