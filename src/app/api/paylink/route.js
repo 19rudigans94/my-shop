@@ -24,6 +24,11 @@ export async function POST(request) {
     const returnUrl = process.env.PAYLINK_RETURN_URL;
 
     console.log("🔗 Return URL:", returnUrl);
+    console.log(
+      "🏪 Shop ID:",
+      shopId ? `${shopId.substring(0, 8)}...` : "НЕ УСТАНОВЛЕН"
+    );
+    console.log("🔑 Shop Secret:", shopSecret ? "УСТАНОВЛЕН" : "НЕ УСТАНОВЛЕН");
 
     // Проверяем обязательные переменные
     if (!shopId || !shopSecret) {

@@ -96,6 +96,8 @@ export async function GET(request) {
   const paymentId = searchParams.get("paymentId");
   const amount = searchParams.get("amount");
 
+  // Логируем полный URL для отладки
+  console.log("🌐 Полный URL callback:", request.url);
   console.log("🔔 Получен callback от PayLink:", {
     status,
     uid,
@@ -103,6 +105,12 @@ export async function GET(request) {
     paymentId,
     amount,
   });
+
+  // Логируем все параметры
+  console.log(
+    "📋 Все параметры URL:",
+    Object.fromEntries(searchParams.entries())
+  );
 
   if (status === "successful") {
     try {
