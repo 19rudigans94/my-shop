@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Order from "@/models/Order";
-import sendEmail from "@/app/utils/sendEmail";
+import { sendOrderConfirmationEmail } from "@/app/utils/sendEmail";
 
 export async function GET(request) {
   try {
@@ -63,7 +63,26 @@ export async function GET(request) {
 
         // Отправляем email с подтверждением
         try {
-          await sendEmail(updatedOrder);
+          // Адаптируем данные заказа под формат, ожидаемый функцией sendOrderConfirmationEmail
+          const emailData = {
+            customer: {
+              name: updatedOrder.contactData.email.split("@")[0], // Используем часть email как имя, если имя не указано
+              phone: updatedOrder.contactData.phone,
+              email: updatedOrder.contactData.email,
+            },
+            order: {
+              items: updatedOrder.items.map((item) => ({
+                name: item.title,
+                quantity: item.quantity,
+                price: item.price,
+                total: item.total,
+              })),
+              totalAmount: updatedOrder.totalPrice,
+            },
+            orderId: updatedOrder.uid,
+          };
+
+          await sendOrderConfirmationEmail(emailData);
           console.log("📧 Email отправлен успешно");
         } catch (emailError) {
           console.error("❌ Ошибка отправки email:", emailError);
