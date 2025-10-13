@@ -27,6 +27,12 @@ function SuccessPageContent() {
         // Получаем данные заказа из localStorage
         const pendingOrderData = localStorage.getItem("pendingOrder");
 
+        console.log("🔍 Поиск данных заказа:", {
+          hasLocalStorage: !!pendingOrderData,
+          cartItemsCount: items.length,
+          urlParams: { orderId, paymentId, amount },
+        });
+
         if (pendingOrderData) {
           const orderData = JSON.parse(pendingOrderData);
 
