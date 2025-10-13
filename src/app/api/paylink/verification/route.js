@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Order from "@/models/Order";
-import { sendEmail } from "@/app/utils/sendEmail";
+import sendEmail from "@/app/utils/sendEmail";
 
 export async function GET(request) {
   try {
