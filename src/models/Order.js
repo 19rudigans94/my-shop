@@ -2,10 +2,15 @@ import mongoose from "mongoose";
 
 const OrderSchema = new mongoose.Schema(
   {
+    // Новый формат (PayLink)
     uid: {
       type: String,
-      required: true,
-      unique: true,
+      sparse: true, // Позволяет null/undefined значения для совместимости
+    },
+    // Старый формат (совместимость)
+    orderId: {
+      type: String,
+      sparse: true,
     },
     items: [
       {
@@ -55,14 +60,25 @@ const OrderSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    // Новый формат контактных данных (PayLink)
     contactData: {
       phone: {
         type: String,
-        required: true,
       },
       email: {
         type: String,
-        required: true,
+      },
+    },
+    // Старый формат контактных данных (совместимость)
+    customerInfo: {
+      email: {
+        type: String,
+      },
+      phoneNumber: {
+        type: String,
+      },
+      name: {
+        type: String,
       },
     },
     status: {
@@ -70,6 +86,12 @@ const OrderSchema = new mongoose.Schema(
       enum: ["pending", "successful", "failed", "cancelled"],
       default: "pending",
     },
+    // Старый формат статуса платежа (совместимость)
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "successful", "failed", "cancelled"],
+    },
+    // Новый формат данных платежа
     paymentId: {
       type: String,
     },
@@ -81,6 +103,24 @@ const OrderSchema = new mongoose.Schema(
     },
     paymentData: {
       type: mongoose.Schema.Types.Mixed,
+    },
+    // Поля для совместимости со старым форматом
+    totalAmount: {
+      type: Number,
+    },
+    emailsSent: {
+      customerNotified: {
+        type: Boolean,
+        default: false,
+      },
+      storeNotified: {
+        type: Boolean,
+        default: false,
+      },
+      inventoryUpdated: {
+        type: Boolean,
+        default: false,
+      },
     },
     errorMessage: {
       type: String,
@@ -94,9 +134,13 @@ const OrderSchema = new mongoose.Schema(
   }
 );
 
-// Индексы для быстрого поиска (uid уже имеет unique: true, поэтому не добавляем отдельный индекс)
+// Индексы для быстрого поиска
+OrderSchema.index({ uid: 1 }, { sparse: true });
+OrderSchema.index({ orderId: 1 }, { sparse: true });
 OrderSchema.index({ status: 1 });
-OrderSchema.index({ "contactData.email": 1 });
+OrderSchema.index({ paymentStatus: 1 });
+OrderSchema.index({ "contactData.email": 1 }, { sparse: true });
+OrderSchema.index({ "customerInfo.email": 1 }, { sparse: true });
 OrderSchema.index({ createdAt: -1 });
 
 // Виртуальное поле для форматированной даты
@@ -110,18 +154,39 @@ OrderSchema.virtual("formattedDate").get(function () {
   });
 });
 
-// Метод для получения общей информации о заказе
+// Виртуальные поля для унифицированного доступа к данным
+OrderSchema.virtual("unifiedId").get(function () {
+  return this.uid || this.orderId;
+});
+
+OrderSchema.virtual("unifiedEmail").get(function () {
+  return this.contactData?.email || this.customerInfo?.email;
+});
+
+OrderSchema.virtual("unifiedPhone").get(function () {
+  return this.contactData?.phone || this.customerInfo?.phoneNumber;
+});
+
+OrderSchema.virtual("unifiedStatus").get(function () {
+  return this.status || this.paymentStatus;
+});
+
+OrderSchema.virtual("unifiedTotalPrice").get(function () {
+  return this.totalPrice || this.totalAmount;
+});
+
+// Метод для получения общей информации о заказе (работает с обеими структурами)
 OrderSchema.methods.getOrderSummary = function () {
   return {
-    uid: this.uid,
-    totalPrice: this.totalPrice,
+    id: this.unifiedId,
+    totalPrice: this.unifiedTotalPrice,
     totalItems: this.totalItems,
-    status: this.status,
-    email: this.contactData.email,
-    phone: this.contactData.phone,
+    status: this.unifiedStatus,
+    email: this.unifiedEmail,
+    phone: this.unifiedPhone,
     createdAt: this.createdAt,
     items: this.items.map((item) => ({
-      title: item.title,
+      title: item.title || item.name,
       quantity: item.quantity,
       price: item.price,
       total: item.total,
@@ -129,22 +194,37 @@ OrderSchema.methods.getOrderSummary = function () {
   };
 };
 
-// Статический метод для поиска заказа по UID
-OrderSchema.statics.findByUid = function (uid) {
-  return this.findOne({ uid });
+// Статический метод для поиска заказа по ID (работает с обеими структурами)
+OrderSchema.statics.findByAnyId = function (id) {
+  return this.findOne({
+    $or: [{ uid: id }, { orderId: id }],
+  });
 };
 
-// Статический метод для обновления статуса заказа
-OrderSchema.statics.updateStatus = function (uid, status, additionalData = {}) {
+// Статический метод для поиска заказа по UID (обратная совместимость)
+OrderSchema.statics.findByUid = function (uid) {
+  return this.findByAnyId(uid);
+};
+
+// Статический метод для обновления статуса заказа (работает с обеими структурами)
+OrderSchema.statics.updateStatus = function (id, status, additionalData = {}) {
   return this.findOneAndUpdate(
-    { uid },
+    { $or: [{ uid: id }, { orderId: id }] },
     {
       status,
+      paymentStatus: status, // Обновляем оба поля для совместимости
       processedAt: new Date(),
       ...additionalData,
     },
     { new: true }
   );
+};
+
+// Статический метод для поиска заказа по email
+OrderSchema.statics.findByEmail = function (email) {
+  return this.find({
+    $or: [{ "contactData.email": email }, { "customerInfo.email": email }],
+  });
 };
 
 export default mongoose.models.Order || mongoose.model("Order", OrderSchema);

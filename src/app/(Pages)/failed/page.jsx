@@ -15,8 +15,9 @@ function FailedPageContent() {
   // Получаем параметры из URL
   const errorCode = searchParams.get("error");
   const errorMessage = searchParams.get("message");
-  const orderId = searchParams.get("orderId");
+  const orderId = searchParams.get("orderId") || searchParams.get("uid");
   const amount = searchParams.get("amount");
+  const paymentErrorCode = searchParams.get("code");
 
   useEffect(() => {
     // Определяем тип ошибки и соответствующее сообщение
@@ -59,6 +60,18 @@ function FailedPageContent() {
           icon: "❌",
           color: "gray",
         },
+        payment_cancelled: {
+          title: "Платеж не завершен",
+          description: "Процесс оплаты был прерван или не завершен",
+          icon: "⏹️",
+          color: "orange",
+        },
+        invalid_card: {
+          title: "Неверные данные карты",
+          description: "Проверьте правильность введенных данных карты",
+          icon: "💳",
+          color: "red",
+        },
         order_not_found: {
           title: "Заказ не найден",
           description: "Не удалось найти информацию о вашем заказе в системе",
@@ -98,6 +111,7 @@ function FailedPageContent() {
       ...getErrorInfo(errorCode),
       customMessage: errorMessage,
       orderId: orderId,
+      paymentErrorCode: paymentErrorCode,
       amount: amount || (items.length > 0 ? getTotalPrice() : 0),
       timestamp: new Date().toLocaleString("ru-RU"),
     });
@@ -215,6 +229,16 @@ function FailedPageContent() {
                         {errorDetails.timestamp}
                       </span>
                     </div>
+                    {errorDetails.paymentErrorCode && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-300">
+                          Код ошибки:
+                        </span>
+                        <span className="font-mono text-red-600 dark:text-red-400">
+                          {errorDetails.paymentErrorCode}
+                        </span>
+                      </div>
+                    )}
                     {errorDetails.customMessage && (
                       <div className="mt-4">
                         <span className="text-gray-600 dark:text-gray-300 block mb-2">
@@ -249,7 +273,38 @@ function FailedPageContent() {
                   Что можно сделать?
                 </h3>
                 <div className="space-y-3 text-sm text-gray-600 dark:text-gray-300">
-                  {errorCode === "order_not_found" ? (
+                  {errorCode === "payment_cancelled" ? (
+                    <>
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          1
+                        </div>
+                        <p>Попробуйте оплатить заказ еще раз</p>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          2
+                        </div>
+                        <p>
+                          Убедитесь, что у вас стабильное интернет-соединение
+                        </p>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          3
+                        </div>
+                        <p>Не закрывайте окно браузера до завершения оплаты</p>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          4
+                        </div>
+                        <p>
+                          Если проблема повторяется, попробуйте другую карту
+                        </p>
+                      </div>
+                    </>
+                  ) : errorCode === "order_not_found" ? (
                     <>
                       <div className="flex items-start space-x-3">
                         <div className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
