@@ -49,8 +49,12 @@ export async function sendOrderConfirmationEmail(orderData) {
             <td style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">${
               item.quantity
             }</td>
-            <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${item.price.toLocaleString()} ₸</td>
-            <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${item.total.toLocaleString()} ₸</td>
+            <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${(
+              item.price || 0
+            ).toLocaleString()} ₸</td>
+            <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${(
+              item.total || 0
+            ).toLocaleString()} ₸</td>
           </tr>
           ${
             item.digitalKeys
@@ -76,7 +80,9 @@ export async function sendOrderConfirmationEmail(orderData) {
       <tfoot>
         <tr style="background-color: #f8f9fa; font-weight: bold;">
           <td colspan="3" style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">Итого:</td>
-          <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${order.totalAmount.toLocaleString()} ₸</td>
+          <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${(
+            order.totalAmount || 0
+          ).toLocaleString()} ₸</td>
         </tr>
       </tfoot>
     </table>
@@ -213,8 +219,12 @@ export async function sendManagerNotificationEmail(orderData) {
             <td style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">${
               item.quantity
             }</td>
-            <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${item.price.toLocaleString()} ₸</td>
-            <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${item.total.toLocaleString()} ₸</td>
+            <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${(
+              item.price || 0
+            ).toLocaleString()} ₸</td>
+            <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${(
+              item.total || 0
+            ).toLocaleString()} ₸</td>
             <td style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">
               ${
                 item.digitalKeys
@@ -230,7 +240,9 @@ export async function sendManagerNotificationEmail(orderData) {
       <tfoot>
         <tr style="background-color: #f8f9fa; font-weight: bold;">
           <td colspan="4" style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">Итого:</td>
-          <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${order.totalAmount.toLocaleString()} ₸</td>
+          <td style="padding: 12px; text-align: right; border: 1px solid #dee2e6;">${(
+            order.totalAmount || 0
+          ).toLocaleString()} ₸</td>
         </tr>
       </tfoot>
     </table>
