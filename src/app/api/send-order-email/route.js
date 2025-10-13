@@ -118,6 +118,12 @@ export async function POST(request) {
 
         // Ищем цифровые ключи для этой игры
         try {
+          console.log(`🔍 Поиск в базе данных:`, {
+            searchGameId: item.id,
+            searchPlatform: item.platform,
+            searchTitle: item.title,
+          });
+
           // Ищем цифровые копии по gameId (ObjectId)
           let digitalCopies = await DigitalCopy.find({
             gameId: item.id,
@@ -125,8 +131,94 @@ export async function POST(request) {
             isActive: true,
           }).limit(item.quantity);
 
+          console.log(`📋 Результат поиска по gameId:`, {
+            found: digitalCopies.length,
+            copies: digitalCopies.map((copy) => ({
+              _id: copy._id,
+              gameId: copy.gameId,
+              platform: copy.platform,
+              credentialsCount: copy.credentials?.length || 0,
+            })),
+          });
+
+          // Если не найдено по gameId, попробуем поиск по связанной игре
+          if (digitalCopies.length === 0) {
+            console.log(
+              `⚠️ Цифровые копии не найдены по gameId, пробуем альтернативный поиск`
+            );
+
+            // Попробуем найти игру по названию и получить её ID
+            const Game = (await import("@/models/Game")).default;
+
+            const gameByTitle = await Game.findOne({
+              $or: [
+                { title: item.title },
+                {
+                  title: new RegExp(
+                    item.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                    "i"
+                  ),
+                },
+                { slug: item.title.toLowerCase().replace(/\s+/g, "-") },
+              ],
+            });
+
+            if (gameByTitle) {
+              console.log(`🎮 Найдена игра по названию:`, {
+                gameId: gameByTitle._id,
+                title: gameByTitle.title,
+              });
+
+              // Ищем цифровые копии по найденному ID игры
+              digitalCopies = await DigitalCopy.find({
+                gameId: gameByTitle._id,
+                platform: item.platform,
+                isActive: true,
+              }).limit(item.quantity);
+
+              console.log(`📋 Результат поиска по названию игры:`, {
+                found: digitalCopies.length,
+                copies: digitalCopies.map((copy) => ({
+                  _id: copy._id,
+                  gameId: copy.gameId,
+                  platform: copy.platform,
+                  credentialsCount: copy.credentials?.length || 0,
+                })),
+              });
+            } else {
+              console.log(
+                `❌ Игра "${item.title}" не найдена в коллекции games`
+              );
+            }
+          }
+
+          // Если все еще не найдено, показываем все доступные цифровые копии для отладки
+          if (digitalCopies.length === 0) {
+            console.log(
+              `🔍 Показываем все доступные цифровые копии для платформы ${item.platform}:`
+            );
+
+            const allDigitalCopies = await DigitalCopy.find({
+              platform: item.platform,
+              isActive: true,
+            });
+
+            console.log(
+              `📋 Все цифровые копии для ${item.platform}:`,
+              allDigitalCopies.map((copy) => ({
+                _id: copy._id,
+                gameId: copy.gameId,
+                platform: copy.platform,
+                price: copy.price,
+                credentialsCount: copy.credentials?.length || 0,
+                activeCredentials:
+                  copy.credentials?.filter((cred) => cred.isActive).length || 0,
+              }))
+            );
+          }
+
           console.log(
-            `🔑 Найдено цифровых копий: ${digitalCopies.length} из ${item.quantity} нужных`
+            `🔑 Итого найдено цифровых копий: ${digitalCopies.length} из ${item.quantity} нужных`
           );
 
           if (digitalCopies.length >= item.quantity) {
