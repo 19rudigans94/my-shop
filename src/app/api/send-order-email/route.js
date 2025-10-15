@@ -192,20 +192,21 @@ export async function POST(request) {
             }
           }
 
-          // Если все еще не найдено, показываем все доступные цифровые копии для отладки
+          // Если не найдено для нужной платформы, проверим другие платформы этой игры
           if (digitalCopies.length === 0) {
             console.log(
-              `🔍 Показываем все доступные цифровые копии для платформы ${item.platform}:`
+              `🔍 Цифровая копия для ${item.platform} не найдена, проверяем другие платформы:`
             );
 
-            const allDigitalCopies = await DigitalCopy.find({
-              platform: item.platform,
+            // Ищем цифровые копии этой игры для любых платформ
+            const allCopiesForGame = await DigitalCopy.find({
+              gameId: gameByTitle?._id || item.id,
               isActive: true,
             });
 
             console.log(
-              `📋 Все цифровые копии для ${item.platform}:`,
-              allDigitalCopies.map((copy) => ({
+              `📋 Все цифровые копии для игры "${item.title}":`,
+              allCopiesForGame.map((copy) => ({
                 _id: copy._id,
                 gameId: copy.gameId,
                 platform: copy.platform,
@@ -215,6 +216,25 @@ export async function POST(request) {
                   copy.credentials?.filter((cred) => cred.isActive).length || 0,
               }))
             );
+
+            // Если есть копии для других платформ, уведомляем об этом
+            if (allCopiesForGame.length > 0) {
+              const availablePlatforms = allCopiesForGame.map(
+                (copy) => copy.platform
+              );
+              console.log(
+                `⚠️ Игра "${
+                  item.title
+                }" доступна в цифровом виде для платформ: ${availablePlatforms.join(
+                  ", "
+                )}, но НЕ для ${item.platform}`
+              );
+
+              // Добавляем информацию о доступных платформах к товару
+              processedItem.availableDigitalPlatforms = availablePlatforms;
+              processedItem.requestedPlatform = item.platform;
+              processedItem.digitalAvailableElsewhere = true;
+            }
           }
 
           console.log(

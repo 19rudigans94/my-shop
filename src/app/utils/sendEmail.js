@@ -120,14 +120,53 @@ export async function sendOrderConfirmationEmail(orderData) {
       </div>
     `;
   } else if (order.hasPhysicalItems) {
-    additionalInfo = `
-      <div style="background-color: #cce7ff; border: 1px solid #99d6ff; padding: 15px; margin: 20px 0; border-radius: 5px;">
-        <h4 style="color: #004085; margin: 0 0 10px 0;">📦 Физические товары</h4>
-        <p style="color: #004085; margin: 0;">
-          Наш менеджер свяжется с вами в ближайшее время для уточнения деталей доставки и передачи товара.
-        </p>
-      </div>
-    `;
+    // Проверяем, есть ли товары с цифровыми версиями для других платформ
+    const itemsWithAlternatives = order.items.filter(
+      (item) => item.digitalAvailableElsewhere
+    );
+
+    if (itemsWithAlternatives.length > 0) {
+      const alternativeInfo = itemsWithAlternatives
+        .map(
+          (item) =>
+            `<li><strong>${item.name}</strong> (заказано для ${
+              item.requestedPlatform
+            }) - доступно в цифровом виде для: ${item.availableDigitalPlatforms.join(
+              ", "
+            )}</li>`
+        )
+        .join("");
+
+      additionalInfo = `
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin: 20px 0; border-radius: 5px;">
+          <h4 style="color: #856404; margin: 0 0 10px 0;">⚠️ Важная информация о цифровых версиях</h4>
+          <p style="color: #856404; margin: 0 0 10px 0;">
+            Некоторые игры из вашего заказа доступны в цифровом виде, но не для заказанной платформы:
+          </p>
+          <ul style="color: #856404; margin: 0; padding-left: 20px;">
+            ${alternativeInfo}
+          </ul>
+          <p style="color: #856404; margin: 10px 0 0 0;">
+            Наш менеджер свяжется с вами для уточнения: хотите ли вы получить цифровую версию для доступной платформы или физическую копию для заказанной платформы.
+          </p>
+        </div>
+        <div style="background-color: #cce7ff; border: 1px solid #99d6ff; padding: 15px; margin: 20px 0; border-radius: 5px;">
+          <h4 style="color: #004085; margin: 0 0 10px 0;">📦 Физические товары</h4>
+          <p style="color: #004085; margin: 0;">
+            Наш менеджер свяжется с вами в ближайшее время для уточнения деталей доставки и передачи товара.
+          </p>
+        </div>
+      `;
+    } else {
+      additionalInfo = `
+        <div style="background-color: #cce7ff; border: 1px solid #99d6ff; padding: 15px; margin: 20px 0; border-radius: 5px;">
+          <h4 style="color: #004085; margin: 0 0 10px 0;">📦 Физические товары</h4>
+          <p style="color: #004085; margin: 0;">
+            Наш менеджер свяжется с вами в ближайшее время для уточнения деталей доставки и передачи товара.
+          </p>
+        </div>
+      `;
+    }
   }
 
   const mailOptions = {
@@ -237,7 +276,13 @@ export async function sendManagerNotificationEmail(orderData) {
             <td style="padding: 12px; text-align: center; border: 1px solid #dee2e6;">
               ${
                 item.digitalKeys
-                  ? `<span style="color: #28a745; font-weight: bold;">🔑 Цифровой</span><br><small>Ключи выданы</small>`
+                  ? `<span style="color: #28a745; font-weight: bold;">🔑 Цифровой</span><br><small>Аккаунты выданы</small>`
+                  : item.digitalAvailableElsewhere
+                  ? `<span style="color: #ffc107; font-weight: bold;">⚠️ Альтернатива</span><br><small>Есть для: ${item.availableDigitalPlatforms.join(
+                      ", "
+                    )}</small><br><small>Заказано для: ${
+                      item.requestedPlatform
+                    }</small>`
                   : `<span style="color: #dc3545; font-weight: bold;">📦 Физический</span><br><small>Требует доставки</small>`
               }
             </td>
@@ -261,15 +306,27 @@ export async function sendManagerNotificationEmail(orderData) {
   let priority = "🟢 Обычный";
   let actionRequired = "";
 
+  // Проверяем наличие товаров с альтернативными платформами
+  const hasAlternativePlatforms = order.items.some(
+    (item) => item.digitalAvailableElsewhere
+  );
+
   if (order.hasDigitalItems && order.hasPhysicalItems) {
     priority = "🟡 Смешанный";
     actionRequired = "Требуется связаться с клиентом по физическим товарам";
   } else if (order.hasPhysicalItems) {
-    priority = "🔴 Высокий";
-    actionRequired = "Требуется связаться с клиентом для организации доставки";
+    if (hasAlternativePlatforms) {
+      priority = "🟠 Особый";
+      actionRequired =
+        "Есть цифровые версии для других платформ - уточнить у клиента предпочтения";
+    } else {
+      priority = "🔴 Высокий";
+      actionRequired =
+        "Требуется связаться с клиентом для организации доставки";
+    }
   } else if (order.hasDigitalItems) {
     priority = "🟢 Низкий";
-    actionRequired = "Цифровые ключи выданы автоматически";
+    actionRequired = "Цифровые аккаунты выданы автоматически";
   }
 
   const mailOptions = {
