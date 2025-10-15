@@ -108,7 +108,16 @@ export async function POST(request) {
       };
 
       // Проверяем, является ли товар потенциально цифровым (игра с платформой)
-      if (item.category === "games" && item.platform) {
+      // Учитываем разные способы определения игры: category, type, или наличие platform
+      const isGame =
+        item.category === "games" ||
+        item.type === "game" ||
+        (item.platform &&
+          ["PS4", "PS5", "XBOX", "PC", "Nintendo Switch"].includes(
+            item.platform
+          ));
+
+      if (isGame && item.platform) {
         console.log(`🔍 Проверка цифровых ключей для игры:`, {
           title: item.title,
           id: item.id,
@@ -119,17 +128,37 @@ export async function POST(request) {
         // Ищем цифровые ключи для этой игры
         try {
           console.log(`🔍 Поиск в базе данных:`, {
-            searchGameId: item.id,
+            searchId: item.id,
             searchPlatform: item.platform,
             searchTitle: item.title,
+            variant: item.variant,
           });
 
-          // Ищем цифровые копии по gameId (ObjectId)
-          let digitalCopies = await DigitalCopy.find({
-            gameId: item.id,
-            platform: item.platform,
-            isActive: true,
-          }).limit(item.quantity);
+          let digitalCopies = [];
+
+          // Если variant === "digital", то item.id это уже ID цифровой копии
+          if (item.variant === "digital") {
+            console.log(`🎯 Прямой поиск цифровой копии по ID: ${item.id}`);
+
+            const digitalCopy = await DigitalCopy.findById(item.id);
+            if (digitalCopy && digitalCopy.isActive) {
+              digitalCopies = [digitalCopy];
+              console.log(`✅ Найдена цифровая копия напрямую:`, {
+                _id: digitalCopy._id,
+                gameId: digitalCopy.gameId,
+                platform: digitalCopy.platform,
+                price: digitalCopy.price,
+                credentialsCount: digitalCopy.credentials?.length || 0,
+              });
+            }
+          } else {
+            // Ищем цифровые копии по gameId (для физических товаров)
+            digitalCopies = await DigitalCopy.find({
+              gameId: item.id,
+              platform: item.platform,
+              isActive: true,
+            }).limit(item.quantity);
+          }
 
           console.log(`📋 Результат поиска по gameId:`, {
             found: digitalCopies.length,

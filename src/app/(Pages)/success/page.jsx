@@ -194,11 +194,15 @@ function SuccessPageContent() {
   };
 
   // Функция для тестирования отправки email вручную
-  const handleTestEmail = async () => {
+  const handleTestEmail = async (useSimpleApi = false) => {
     setEmailStatus((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
-      console.log("🧪 Ручное тестирование email...");
+      console.log(
+        `🧪 Ручное тестирование email (${
+          useSimpleApi ? "простой" : "полный"
+        } API)...`
+      );
 
       const pendingOrderData = localStorage.getItem("pendingOrder");
 
@@ -219,7 +223,12 @@ function SuccessPageContent() {
         orderData
       );
 
-      const response = await fetch("/api/send-order-email", {
+      const apiEndpoint = useSimpleApi
+        ? "/api/simple-email"
+        : "/api/send-order-email";
+      console.log(`🔗 Используем API: ${apiEndpoint}`);
+
+      const response = await fetch(apiEndpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -534,12 +543,20 @@ function SuccessPageContent() {
                   !emailStatus.error &&
                   typeof window !== "undefined" &&
                   localStorage.getItem("pendingOrder") && (
-                    <button
-                      onClick={handleTestEmail}
-                      className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200"
-                    >
-                      📧 Отправить email
-                    </button>
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => handleTestEmail(true)}
+                        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200"
+                      >
+                        📧 Отправить email (простой API)
+                      </button>
+                      <button
+                        onClick={() => handleTestEmail(false)}
+                        className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200"
+                      >
+                        🔍 Отправить email (с поиском цифровых копий)
+                      </button>
+                    </div>
                   )}
               </div>
             </div>
