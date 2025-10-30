@@ -2,12 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Search from "@/app/components/Search";
-import Filters from "@/app/components/Filters";
-import MobileFilters from "@/app/components/Filters/MobileFilters";
-import ActiveFilters from "@/app/components/Filters/ActiveFilters";
-import { useFilters } from "@/app/hooks/useFilters";
-import { gamesFilters } from "@/app/config/filters";
+
 import GameCard from "@/app/components/GameCard";
 
 export default function GamesPage() {
@@ -15,27 +10,12 @@ export default function GamesPage() {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const {
-    filters,
-    setFilter,
-    removeFilter,
-    clearFilters,
-    isMobileFiltersOpen,
-    setIsMobileFiltersOpen,
-  } = useFilters(gamesFilters);
 
   useEffect(() => {
     const fetchGames = async () => {
       try {
         setLoading(true);
         const queryParams = new URLSearchParams();
-
-        // Добавляем параметры фильтрации
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value && value !== "all") {
-            queryParams.append(key, value);
-          }
-        });
 
         const response = await fetch(`/api/games?${queryParams.toString()}`);
         if (!response.ok) throw new Error("Ошибка загрузки игр");
@@ -50,7 +30,7 @@ export default function GamesPage() {
     };
 
     fetchGames();
-  }, [filters]);
+  }, []);
 
   if (loading) {
     return (

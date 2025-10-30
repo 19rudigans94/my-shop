@@ -7,6 +7,68 @@ import connectDB from "@/lib/mongodb";
 import DigitalCopy from "@/models/DigitalCopy";
 import nodemailer from "nodemailer";
 
+/**
+ * @swagger
+ * /api/send-order-email:
+ *   post:
+ *     summary: Отправить email о заказе
+ *     description: Отправляет email клиенту и менеджеру после успешной оплаты. Автоматически выдает цифровые ключи если доступны.
+ *     tags: [Orders]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - orderData
+ *               - paymentId
+ *             properties:
+ *               orderData:
+ *                 type: object
+ *                 properties:
+ *                   items:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                   totalPrice:
+ *                     type: number
+ *                   contactData:
+ *                     type: object
+ *                     properties:
+ *                       email:
+ *                         type: string
+ *                       phone:
+ *                         type: string
+ *               paymentId:
+ *                 type: string
+ *                 description: ID платежа от PayLink
+ *     responses:
+ *       200:
+ *         description: Email успешно отправлены
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 results:
+ *                   type: object
+ *                   properties:
+ *                     customerEmail:
+ *                       type: boolean
+ *                     managerEmail:
+ *                       type: boolean
+ *                 hasDigitalItems:
+ *                   type: boolean
+ *                 hasPhysicalItems:
+ *                   type: boolean
+ *       500:
+ *         description: Ошибка отправки email
+ */
 export async function POST(request) {
   try {
     const { orderData, paymentId } = await request.json();

@@ -3,6 +3,30 @@ import connectDB from "@/lib/mongodb";
 import Game from "@/models/Game";
 import { generateSlug } from "@/lib/utils";
 
+/**
+ * @swagger
+ * /api/protected/games/{id}:
+ *   get:
+ *     summary: Получить игру по ID (защищенный)
+ *     description: Получает детальную информацию об игре по её ID. Требует авторизации.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: MongoDB ID игры
+ *     responses:
+ *       200:
+ *         description: Игра успешно найдена
+ *       404:
+ *         description: Игра не найдена
+ *       500:
+ *         description: Ошибка сервера
+ */
 // Получение конкретной игры
 export async function GET(request, { params }) {
   try {
@@ -38,6 +62,50 @@ export async function GET(request, { params }) {
   }
 }
 
+/**
+ * @swagger
+ * /api/protected/games/{id}:
+ *   put:
+ *     summary: Обновить игру (защищенный)
+ *     description: Обновляет существующую игру. Требует авторизации.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               price:
+ *                 type: number
+ *               description:
+ *                 type: string
+ *               platforms:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               image:
+ *                 type: string
+ *               stock:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Игра успешно обновлена
+ *       404:
+ *         description: Игра не найдена
+ *       500:
+ *         description: Ошибка сервера
+ */
 // Обновление игры
 export async function PUT(request, { params }) {
   try {
@@ -120,6 +188,29 @@ export async function PUT(request, { params }) {
   }
 }
 
+/**
+ * @swagger
+ * /api/protected/games/{id}:
+ *   delete:
+ *     summary: Удалить игру (защищенный)
+ *     description: Удаляет игру из базы данных. Требует авторизации.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Игра успешно удалена
+ *       404:
+ *         description: Игра не найдена
+ *       500:
+ *         description: Ошибка сервера
+ */
 // Удаление игры
 export async function DELETE(request, { params }) {
   try {

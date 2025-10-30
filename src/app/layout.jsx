@@ -1,6 +1,5 @@
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/providers/ThemeProvider";
 import { Header } from "@/app/components/Header/Header";
 
 const jetBrainsMono = JetBrains_Mono({
@@ -16,12 +15,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ru" suppressHydrationWarning>
       <body className={`${jetBrainsMono.className} antialiased`}>
-        <ThemeProvider>
-          <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors">
-            <Header />
-            <main className="container mx-auto px-4 py-8">{children}</main>
-          </div>
-        </ThemeProvider>
+        <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors">
+          <Header />
+          <main className="container mx-auto px-4 py-8">{children}</main>
+        </div>
       </body>
     </html>
   );

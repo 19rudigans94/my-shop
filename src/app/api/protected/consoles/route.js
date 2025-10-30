@@ -3,6 +3,32 @@ import connectDB from "@/lib/mongodb";
 import Console from "@/models/Console";
 import { generateSlug } from "@/lib/utils";
 
+/**
+ * @swagger
+ * /api/protected/consoles:
+ *   get:
+ *     summary: Получить список консолей (защищенный)
+ *     description: Получает полный список консолей из базы данных. Требует авторизации.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Список консолей успешно получен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 consoles:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Console'
+ *       500:
+ *         description: Ошибка сервера
+ */
 // Получение списка консолей
 export async function GET() {
   try {
@@ -28,6 +54,47 @@ export async function GET() {
   }
 }
 
+/**
+ * @swagger
+ * /api/protected/consoles:
+ *   post:
+ *     summary: Создать новую консоль (защищенный)
+ *     description: Создает новую консоль в базе данных. Требует авторизации.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - state
+ *               - price
+ *               - description
+ *               - image
+ *             properties:
+ *               title:
+ *                 type: string
+ *               state:
+ *                 type: string
+ *                 enum: [new, used]
+ *               price:
+ *                 type: number
+ *               description:
+ *                 type: string
+ *               image:
+ *                 type: string
+ *               stock:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Консоль успешно создана
+ *       500:
+ *         description: Ошибка сервера
+ */
 // Создание новой консоли
 export async function POST(request) {
   try {
