@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-import PriceList from "./components/priceList";
+import PriceList from "./components/PriceList";
 import VideoPlayer from "@/app/components/VideoPlayer";
 // import { useCartStore } from "@/app/store/useCartStore";
 
