@@ -192,7 +192,7 @@ export default function GamesAdminPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-              {editingGame ? "Редактировать игру" : "Добавить новую игру"}
+              {editingGame ? "Редактировать игру!" : "Добавить новую игру!"}
             </h2>
             <GameForm
               game={editingGame}
