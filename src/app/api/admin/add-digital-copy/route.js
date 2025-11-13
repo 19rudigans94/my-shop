@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import DigitalCopy from "@/models/DigitalCopy";
-import { ensureDbConnection } from "../../utils/dbConnection";
+import { ensureDbConnection } from "@/app/utils/dbConnection";
 
 export { createDigitalCopy as POST } from "../../controllers/digitalCopyController";
 
