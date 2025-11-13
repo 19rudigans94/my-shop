@@ -122,7 +122,7 @@ export default function GameDetailsPage() {
             src={game.image}
             alt={game.title}
             fill
-            className="object-cover brightness-50"
+            className="object-cover "
             sizes="100vw"
             priority
           />
@@ -198,12 +198,12 @@ export default function GameDetailsPage() {
                     ))}
                   </div>
                 </div>
-                <div>
+                {/* <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                     Артикул
                   </h3>
                   <p className="text-gray-800 dark:text-gray-200">{game._id}</p>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
