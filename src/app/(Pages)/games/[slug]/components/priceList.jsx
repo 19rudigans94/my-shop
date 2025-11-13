@@ -23,7 +23,7 @@ export default function PriceList() {
 
         console.log("Начинаем загрузку цен для slug:", params.slug);
 
-        // Загрузка цен физических копий
+        // Загрузка цен физических копий/
         const response = await fetch(`/api/games/${params.slug}/prices`);
         const data = await response.json();
         console.warn("Цены физических копий:", data);
