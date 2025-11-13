@@ -1,10 +1,13 @@
+import { NextResponse } from "next/server";
+import DigitalCopy from "@/models/DigitalCopy";
+import { ensureDbConnection } from "../../utils/dbConnection";
 
-export { createDigitalCopy as POST } from "../../../controllers/digitalCopyController";
+export { createDigitalCopy as POST } from "../../controllers/digitalCopyController";
 
 // Для быстрого добавления Detroit: Become Human PS5
 export async function GET() {
   try {
-    await connectDB();
+    await ensureDbConnection();
 
     const detroitGameId = "68108e446add4283cdf87171"; // ID игры Detroit: Become Human из вашей базы
 
