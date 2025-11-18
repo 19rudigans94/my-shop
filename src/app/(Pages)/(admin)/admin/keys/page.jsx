@@ -3,9 +3,19 @@
 import { useState, useEffect } from "react";
 import Modal from "@/app/components/Modal";
 
+const PLATFORMS = [
+  "PS5",
+  "PS4",
+  "Xbox Series X|S",
+  "Xbox One",
+  "Nintendo Switch",
+  "PC",
+];
+
 export default function AdminKeysPage() {
   const [disksData, setDisksData] = useState([]);
   const [digitalData, setDigitalData] = useState([]);
+  const [allGames, setAllGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modalData, setModalData] = useState(null);
@@ -54,10 +64,23 @@ export default function AdminKeysPage() {
     }
   };
 
+  // Функция загрузки всех игр
+  const fetchAllGames = async () => {
+    try {
+      const response = await fetch("/api/protected/games");
+      const result = await response.json();
+      if (result.success) {
+        setAllGames(result.games || []);
+      }
+    } catch (err) {
+      console.error("Ошибка при загрузке игр:", err);
+    }
+  };
+
   // Загрузка всех данных
   const fetchAllData = async () => {
     setLoading(true);
-    await Promise.all([fetchDisksData(), fetchDigitalData()]);
+    await Promise.all([fetchDisksData(), fetchDigitalData(), fetchAllGames()]);
     setLoading(false);
   };
 
@@ -72,7 +95,8 @@ export default function AdminKeysPage() {
     newStock,
     usedPrice,
     usedStock,
-    gameId
+    gameId,
+    platform
   ) => {
     try {
       setIsSubmitting(true);
@@ -86,6 +110,7 @@ export default function AdminKeysPage() {
         body: JSON.stringify({
           diskId: diskId || null,
           gameId,
+          platform: platform || undefined,
           newPrice: newPrice !== undefined ? parseFloat(newPrice) : undefined,
           newStock: newStock !== undefined ? parseInt(newStock) : undefined,
           usedPrice:
@@ -298,15 +323,29 @@ export default function AdminKeysPage() {
     <div className="container mx-auto px-4 py-8">
       {/* Секция физических дисков */}
       <section className="mb-12">
-        <h2 className="text-2xl font-bold mb-6">
-          Управление физическими дисками
-        </h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Управление физическими дисками</h2>
+          <button
+            onClick={() =>
+              openDiskModal({
+                type: "add",
+                modalTitle: "Добавить новый физический диск",
+              })
+            }
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors"
+          >
+            Добавить диск
+          </button>
+        </div>
         <div className="overflow-x-auto">
           <table className="min-w-full bg-white border border-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Игра
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Платформа
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Новые
@@ -320,9 +359,19 @@ export default function AdminKeysPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {disksData.map((item) => (
-                <tr key={item.gameId} className="hover:bg-gray-50">
+              {disksData.map((item, index) => (
+                <tr
+                  key={`${item.gameId}-${
+                    item.platform || "no-platform"
+                  }-${index}`}
+                  className="hover:bg-gray-50"
+                >
                   <td className="px-6 py-4">{item.gameTitle}</td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm font-medium">
+                      {item.platform || "Не указана"}
+                    </span>
+                  </td>
                   <td className="px-6 py-4">
                     <span className="text-sm">
                       {item.newStock} шт. × {item.newPrice}₸
@@ -340,6 +389,7 @@ export default function AdminKeysPage() {
                           gameId: item.gameId,
                           diskId: item.diskId,
                           gameTitle: item.gameTitle,
+                          platform: item.platform,
                           newPrice: item.newPrice,
                           usedPrice: item.usedPrice,
                           newStock: item.newStock,
@@ -500,8 +550,12 @@ export default function AdminKeysPage() {
         {modalData && (
           <div className="p-6">
             <h3 className="text-xl font-bold mb-4">
-              {modalData.diskId ? "Редактирование" : "Добавление"} -{" "}
-              {modalData.gameTitle}
+              {modalData.diskId
+                ? "Редактирование"
+                : modalData.type === "add"
+                ? "Добавление нового диска"
+                : "Добавление"}{" "}
+              {modalData.gameTitle ? `- ${modalData.gameTitle}` : ""}
             </h3>
             {error && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
@@ -514,6 +568,65 @@ export default function AdminKeysPage() {
               </div>
             )}
             <div className="space-y-4">
+              {!modalData.gameId && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Игра *
+                  </label>
+                  <select
+                    className="border p-2 rounded w-full"
+                    value={modalData.gameId || ""}
+                    onChange={(e) => {
+                      const selectedOption =
+                        e.target.options[e.target.selectedIndex];
+                      setModalData({
+                        ...modalData,
+                        gameId: selectedOption.value,
+                        gameTitle: selectedOption.text,
+                      });
+                    }}
+                    disabled={isSubmitting}
+                  >
+                    <option value="">Выберите игру...</option>
+                    {allGames.map((game) => (
+                      <option
+                        key={game._id || game.id}
+                        value={game._id || game.id}
+                      >
+                        {game.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Платформа *
+                </label>
+                <select
+                  className="border p-2 rounded w-full"
+                  value={modalData.platform || ""}
+                  onChange={(e) => {
+                    setModalData({
+                      ...modalData,
+                      platform: e.target.value,
+                    });
+                  }}
+                  disabled={isSubmitting || !!modalData.diskId}
+                >
+                  <option value="">Выберите платформу...</option>
+                  {PLATFORMS.map((platform) => (
+                    <option key={platform} value={platform}>
+                      {platform}
+                    </option>
+                  ))}
+                </select>
+                {modalData.diskId && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Платформу нельзя изменить для существующего диска
+                  </p>
+                )}
+              </div>
               <div>
                 <h4 className="font-medium mb-2">Новые диски</h4>
                 <div className="flex space-x-4">
@@ -639,6 +752,14 @@ export default function AdminKeysPage() {
                         : parseInt(modalData.usedStock);
 
                     // Валидация данных
+                    if (!modalData.diskId && !modalData.gameId) {
+                      setError("Выберите игру");
+                      return;
+                    }
+                    if (!modalData.diskId && !modalData.platform) {
+                      setError("Выберите платформу");
+                      return;
+                    }
                     if (
                       (newPriceValue !== undefined && isNaN(newPriceValue)) ||
                       (usedPriceValue !== undefined && isNaN(usedPriceValue))
@@ -674,7 +795,8 @@ export default function AdminKeysPage() {
                       newStockValue,
                       usedPriceValue,
                       usedStockValue,
-                      modalData.gameId
+                      modalData.gameId,
+                      modalData.platform
                     );
                   }}
                   className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"

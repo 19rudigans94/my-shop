@@ -31,40 +31,56 @@ export async function GET() {
         return diskGameId === gameId;
       });
 
-      // Подсчитываем количество новых и б/у дисков
-      const newDisks = gameDisks.reduce((total, disk) => {
-        const newVariant = disk.variants.find((v) => v.condition === "new");
-        return total + (newVariant ? newVariant.stock : 0);
-      }, 0);
+      // Группируем диски по платформам
+      const platformsMap = new Map();
 
-      const usedDisks = gameDisks.reduce((total, disk) => {
-        const usedVariant = disk.variants.find((v) => v.condition === "used");
-        return total + (usedVariant ? usedVariant.stock : 0);
-      }, 0);
+      for (const disk of gameDisks) {
+        const platform = disk.platform || "PS5"; // Дефолтная платформа для старых записей
+        const platformKey = platform;
 
-      // Находим цены для новых и б/у дисков
-      const newVariant =
-        gameDisks.length > 0
-          ? gameDisks[0].variants.find((v) => v.condition === "new")
-          : null;
-      const usedVariant =
-        gameDisks.length > 0
-          ? gameDisks[0].variants.find((v) => v.condition === "used")
-          : null;
+        if (!platformsMap.has(platformKey)) {
+          platformsMap.set(platformKey, {
+            platform: platform,
+            diskId: disk._id,
+            variants: disk.variants || [],
+          });
+        }
+      }
 
-      // Добавляем результат в массив
-      results.push({
-        gameId: game._id,
-        gameTitle: game.title,
-        newDisks,
-        usedDisks,
-        totalDisks: newDisks + usedDisks,
-        diskId: gameDisks.length > 0 ? gameDisks[0]._id : null,
-        newPrice: newVariant ? newVariant.price : 0,
-        usedPrice: usedVariant ? usedVariant.price : 0,
-        newStock: newVariant ? newVariant.stock : 0,
-        usedStock: usedVariant ? usedVariant.stock : 0,
-      });
+      // Если нет дисков для игры, создаем запись без платформы
+      if (platformsMap.size === 0) {
+        results.push({
+          gameId: game._id,
+          gameTitle: game.title,
+          platform: null,
+          diskId: null,
+          newPrice: 0,
+          usedPrice: 0,
+          newStock: 0,
+          usedStock: 0,
+        });
+      } else {
+        // Добавляем результат для каждой платформы
+        for (const [platformKey, diskData] of platformsMap.entries()) {
+          const newVariant = diskData.variants.find(
+            (v) => v.condition === "new"
+          );
+          const usedVariant = diskData.variants.find(
+            (v) => v.condition === "used"
+          );
+
+          results.push({
+            gameId: game._id,
+            gameTitle: game.title,
+            platform: diskData.platform,
+            diskId: diskData.diskId,
+            newPrice: newVariant ? newVariant.price : 0,
+            usedPrice: usedVariant ? usedVariant.price : 0,
+            newStock: newVariant ? newVariant.stock : 0,
+            usedStock: usedVariant ? usedVariant.stock : 0,
+          });
+        }
+      }
     }
 
     return Response.json({
@@ -99,6 +115,7 @@ export async function POST(request) {
       newStock,
       usedPrice,
       usedStock,
+      platform,
     } = data;
 
     // Если diskId не предоставлен, создаем новую запись
@@ -139,10 +156,21 @@ export async function POST(request) {
           ? parseFloat(price) || 0
           : 0;
 
+      // Валидация платформы
+      if (!platform) {
+        return Response.json(
+          {
+            success: false,
+            error: "Не указана платформа для создания новой записи",
+          },
+          { status: 400 }
+        );
+      }
+
       // Создаем новую запись с указанными вариантами
       const newDisk = {
         gameId: new ObjectId(gameId),
-        platform: "PS5", // Можно сделать динамическим, если нужно
+        platform: platform,
         variants: [
           {
             condition: "new",
