@@ -176,6 +176,67 @@ export async function POST(request) {
       usedPrice !== undefined ||
       usedStock !== undefined
     ) {
+      // Сначала получаем текущий документ, чтобы проверить наличие вариантов
+      const currentDisk = await db
+        .collection("physicaldisks")
+        .findOne({ _id: new ObjectId(diskId) });
+
+      if (!currentDisk) {
+        return Response.json(
+          {
+            success: false,
+            error: "Диск не найден",
+          },
+          { status: 404 }
+        );
+      }
+
+      // Проверяем наличие вариантов и добавляем недостающие
+      const hasNewVariant = currentDisk.variants?.some(
+        (v) => v.condition === "new"
+      );
+      const hasUsedVariant = currentDisk.variants?.some(
+        (v) => v.condition === "used"
+      );
+
+      // Если нужно обновить вариант "new", но его нет - добавляем
+      if (
+        (newPrice !== undefined || newStock !== undefined) &&
+        !hasNewVariant
+      ) {
+        await db.collection("physicaldisks").updateOne(
+          { _id: new ObjectId(diskId) },
+          {
+            $push: {
+              variants: {
+                condition: "new",
+                stock: 0,
+                price: 0,
+              },
+            },
+          }
+        );
+      }
+
+      // Если нужно обновить вариант "used", но его нет - добавляем
+      if (
+        (usedPrice !== undefined || usedStock !== undefined) &&
+        !hasUsedVariant
+      ) {
+        await db.collection("physicaldisks").updateOne(
+          { _id: new ObjectId(diskId) },
+          {
+            $push: {
+              variants: {
+                condition: "used",
+                stock: 0,
+                price: 0,
+              },
+            },
+          }
+        );
+      }
+
       // Строим объект обновления с использованием arrayFilters
       const updateQuery = {};
       const arrayFilters = [];
@@ -224,6 +285,16 @@ export async function POST(request) {
         );
       }
 
+      // Логируем для отладки на продакшене
+      console.log("Обновление диска:", {
+        diskId: diskId.toString(),
+        newPrice,
+        newStock,
+        usedPrice,
+        usedStock,
+        modifiedCount: result.modifiedCount,
+      });
+
       return Response.json({
         success: true,
         message: "Данные успешно обновлены",
@@ -232,6 +303,41 @@ export async function POST(request) {
 
     // Старый формат: обновление одного варианта за раз (для обратной совместимости)
     if (condition && (price !== undefined || stock !== undefined)) {
+      // Проверяем наличие варианта и добавляем, если его нет
+      const currentDisk = await db
+        .collection("physicaldisks")
+        .findOne({ _id: new ObjectId(diskId) });
+
+      if (!currentDisk) {
+        return Response.json(
+          {
+            success: false,
+            error: "Диск не найден",
+          },
+          { status: 404 }
+        );
+      }
+
+      const hasVariant = currentDisk.variants?.some(
+        (v) => v.condition === condition
+      );
+
+      // Если варианта нет - добавляем его
+      if (!hasVariant) {
+        await db.collection("physicaldisks").updateOne(
+          { _id: new ObjectId(diskId) },
+          {
+            $push: {
+              variants: {
+                condition: condition,
+                stock: 0,
+                price: 0,
+              },
+            },
+          }
+        );
+      }
+
       const updateQuery = {};
       if (price !== undefined) {
         updateQuery["variants.$[variant].price"] = parseFloat(price);
@@ -258,6 +364,15 @@ export async function POST(request) {
           { status: 404 }
         );
       }
+
+      // Логируем для отладки
+      console.log("Обновление диска (старый формат):", {
+        diskId: diskId.toString(),
+        condition,
+        price,
+        stock,
+        modifiedCount: result.modifiedCount,
+      });
 
       return Response.json({
         success: true,
