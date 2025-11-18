@@ -89,7 +89,17 @@ export async function POST(request) {
     const db = mongoose.connection.db;
 
     const data = await request.json();
-    const { diskId, condition, price, stock, gameId } = data;
+    const {
+      diskId,
+      condition,
+      price,
+      stock,
+      gameId,
+      newPrice,
+      newStock,
+      usedPrice,
+      usedStock,
+    } = data;
 
     // Если diskId не предоставлен, создаем новую запись
     if (!diskId) {
@@ -103,6 +113,32 @@ export async function POST(request) {
         );
       }
 
+      // Поддержка как старого формата (condition, price, stock), так и нового (newPrice, newStock, usedPrice, usedStock)
+      const finalNewStock =
+        newStock !== undefined
+          ? parseInt(newStock) || 0
+          : condition === "new"
+          ? parseInt(stock) || 0
+          : 0;
+      const finalNewPrice =
+        newPrice !== undefined
+          ? parseFloat(newPrice) || 0
+          : condition === "new"
+          ? parseFloat(price) || 0
+          : 0;
+      const finalUsedStock =
+        usedStock !== undefined
+          ? parseInt(usedStock) || 0
+          : condition === "used"
+          ? parseInt(stock) || 0
+          : 0;
+      const finalUsedPrice =
+        usedPrice !== undefined
+          ? parseFloat(usedPrice) || 0
+          : condition === "used"
+          ? parseFloat(price) || 0
+          : 0;
+
       // Создаем новую запись с указанными вариантами
       const newDisk = {
         gameId: new ObjectId(gameId),
@@ -110,15 +146,17 @@ export async function POST(request) {
         variants: [
           {
             condition: "new",
-            stock: condition === "new" ? parseInt(stock) || 0 : 0,
-            price: condition === "new" ? parseFloat(price) || 0 : 0,
+            stock: finalNewStock,
+            price: finalNewPrice,
           },
           {
             condition: "used",
-            stock: condition === "used" ? parseInt(stock) || 0 : 0,
-            price: condition === "used" ? parseFloat(price) || 0 : 0,
+            stock: finalUsedStock,
+            price: finalUsedPrice,
           },
         ],
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       const result = await db.collection("physicaldisks").insertOne(newDisk);
@@ -131,36 +169,109 @@ export async function POST(request) {
     }
 
     // Если diskId предоставлен, обновляем существующую запись
-    const updateQuery = {};
-    if (price !== undefined) {
-      updateQuery["variants.$[variant].price"] = parseFloat(price);
-    }
-    if (stock !== undefined) {
-      updateQuery["variants.$[variant].stock"] = parseInt(stock);
-    }
+    // Поддержка обновления обоих вариантов одновременно
+    if (
+      newPrice !== undefined ||
+      newStock !== undefined ||
+      usedPrice !== undefined ||
+      usedStock !== undefined
+    ) {
+      // Строим объект обновления с использованием arrayFilters
+      const updateQuery = {};
+      const arrayFilters = [];
 
-    const result = await db.collection("physicaldisks").updateOne(
-      { _id: new ObjectId(diskId) },
-      { $set: updateQuery },
-      {
-        arrayFilters: [{ "variant.condition": condition }],
+      // Обновление данных для новых дисков
+      if (newPrice !== undefined || newStock !== undefined) {
+        if (newPrice !== undefined) {
+          updateQuery["variants.$[newVariant].price"] = parseFloat(newPrice);
+        }
+        if (newStock !== undefined) {
+          updateQuery["variants.$[newVariant].stock"] = parseInt(newStock);
+        }
+        arrayFilters.push({ "newVariant.condition": "new" });
       }
-    );
 
-    if (result.matchedCount === 0) {
-      return Response.json(
+      // Обновление данных для б/у дисков
+      if (usedPrice !== undefined || usedStock !== undefined) {
+        if (usedPrice !== undefined) {
+          updateQuery["variants.$[usedVariant].price"] = parseFloat(usedPrice);
+        }
+        if (usedStock !== undefined) {
+          updateQuery["variants.$[usedVariant].stock"] = parseInt(usedStock);
+        }
+        arrayFilters.push({ "usedVariant.condition": "used" });
+      }
+
+      // Добавляем обновление времени изменения
+      updateQuery["updatedAt"] = new Date();
+
+      // Выполняем одно атомарное обновление
+      const result = await db.collection("physicaldisks").updateOne(
+        { _id: new ObjectId(diskId) },
+        { $set: updateQuery },
         {
-          success: false,
-          error: "Диск не найден",
-        },
-        { status: 404 }
+          arrayFilters: arrayFilters,
+        }
       );
+
+      if (result.matchedCount === 0) {
+        return Response.json(
+          {
+            success: false,
+            error: "Диск не найден",
+          },
+          { status: 404 }
+        );
+      }
+
+      return Response.json({
+        success: true,
+        message: "Данные успешно обновлены",
+      });
     }
 
-    return Response.json({
-      success: true,
-      message: "Данные успешно обновлены",
-    });
+    // Старый формат: обновление одного варианта за раз (для обратной совместимости)
+    if (condition && (price !== undefined || stock !== undefined)) {
+      const updateQuery = {};
+      if (price !== undefined) {
+        updateQuery["variants.$[variant].price"] = parseFloat(price);
+      }
+      if (stock !== undefined) {
+        updateQuery["variants.$[variant].stock"] = parseInt(stock);
+      }
+      updateQuery["updatedAt"] = new Date();
+
+      const result = await db.collection("physicaldisks").updateOne(
+        { _id: new ObjectId(diskId) },
+        { $set: updateQuery },
+        {
+          arrayFilters: [{ "variant.condition": condition }],
+        }
+      );
+
+      if (result.matchedCount === 0) {
+        return Response.json(
+          {
+            success: false,
+            error: "Диск не найден",
+          },
+          { status: 404 }
+        );
+      }
+
+      return Response.json({
+        success: true,
+        message: "Данные успешно обновлены",
+      });
+    }
+
+    return Response.json(
+      {
+        success: false,
+        error: "Не указаны данные для обновления",
+      },
+      { status: 400 }
+    );
   } catch (error) {
     console.error("Ошибка при обновлении данных:", error);
     return Response.json(
