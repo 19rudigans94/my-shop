@@ -66,19 +66,31 @@ export default function AdminKeysPage() {
   }, []);
 
   // Обработчик обновления физических дисков
-  const handleUpdate = async (diskId, condition, price, stock, gameId) => {
+  const handleUpdate = async (
+    diskId,
+    newPrice,
+    newStock,
+    usedPrice,
+    usedStock,
+    gameId
+  ) => {
     try {
+      setIsSubmitting(true);
+      setError(null);
+
       const response = await fetch("/api/admin/keys", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          diskId,
-          condition,
-          price,
-          stock,
+          diskId: diskId || null,
           gameId,
+          newPrice: newPrice !== undefined ? parseFloat(newPrice) : undefined,
+          newStock: newStock !== undefined ? parseInt(newStock) : undefined,
+          usedPrice:
+            usedPrice !== undefined ? parseFloat(usedPrice) : undefined,
+          usedStock: usedStock !== undefined ? parseInt(usedStock) : undefined,
         }),
       });
 
@@ -87,11 +99,14 @@ export default function AdminKeysPage() {
         await fetchDisksData();
         setModalData(null);
         setIsModalOpen(false);
+        setSuccess("Данные успешно сохранены");
       } else {
-        setError(result.error);
+        setError(result.error || "Ошибка при сохранении данных");
       }
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Произошла ошибка при сохранении данных");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -488,27 +503,56 @@ export default function AdminKeysPage() {
               {modalData.diskId ? "Редактирование" : "Добавление"} -{" "}
               {modalData.gameTitle}
             </h3>
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+                <span className="block sm:inline">{error}</span>
+              </div>
+            )}
+            {success && (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
+                <span className="block sm:inline">{success}</span>
+              </div>
+            )}
             <div className="space-y-4">
               <div>
                 <h4 className="font-medium mb-2">Новые диски</h4>
                 <div className="flex space-x-4">
                   <input
                     type="number"
+                    min="0"
                     placeholder="Количество"
-                    defaultValue={modalData.newStock}
-                    onChange={(e) =>
-                      (modalData.newStock = parseInt(e.target.value))
-                    }
+                    value={modalData.newStock ?? ""}
+                    onChange={(e) => {
+                      const value =
+                        e.target.value === ""
+                          ? ""
+                          : parseInt(e.target.value) || 0;
+                      setModalData({
+                        ...modalData,
+                        newStock: value,
+                      });
+                    }}
                     className="border p-2 rounded w-1/2"
+                    disabled={isSubmitting}
                   />
                   <input
                     type="number"
+                    min="0"
+                    step="0.01"
                     placeholder="Цена"
-                    defaultValue={modalData.newPrice}
-                    onChange={(e) =>
-                      (modalData.newPrice = parseFloat(e.target.value))
-                    }
+                    value={modalData.newPrice ?? ""}
+                    onChange={(e) => {
+                      const value =
+                        e.target.value === ""
+                          ? ""
+                          : parseFloat(e.target.value) || 0;
+                      setModalData({
+                        ...modalData,
+                        newPrice: value,
+                      });
+                    }}
                     className="border p-2 rounded w-1/2"
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
@@ -517,21 +561,40 @@ export default function AdminKeysPage() {
                 <div className="flex space-x-4">
                   <input
                     type="number"
+                    min="0"
                     placeholder="Количество"
-                    defaultValue={modalData.usedStock}
-                    onChange={(e) =>
-                      (modalData.usedStock = parseInt(e.target.value))
-                    }
+                    value={modalData.usedStock ?? ""}
+                    onChange={(e) => {
+                      const value =
+                        e.target.value === ""
+                          ? ""
+                          : parseInt(e.target.value) || 0;
+                      setModalData({
+                        ...modalData,
+                        usedStock: value,
+                      });
+                    }}
                     className="border p-2 rounded w-1/2"
+                    disabled={isSubmitting}
                   />
                   <input
                     type="number"
+                    min="0"
+                    step="0.01"
                     placeholder="Цена"
-                    defaultValue={modalData.usedPrice}
-                    onChange={(e) =>
-                      (modalData.usedPrice = parseFloat(e.target.value))
-                    }
+                    value={modalData.usedPrice ?? ""}
+                    onChange={(e) => {
+                      const value =
+                        e.target.value === ""
+                          ? ""
+                          : parseFloat(e.target.value) || 0;
+                      setModalData({
+                        ...modalData,
+                        usedPrice: value,
+                      });
+                    }}
                     className="border p-2 rounded w-1/2"
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
@@ -540,31 +603,84 @@ export default function AdminKeysPage() {
                   onClick={() => {
                     setModalData(null);
                     setIsModalOpen(false);
+                    setError(null);
+                    setSuccess(null);
                   }}
                   className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded transition-colors"
+                  disabled={isSubmitting}
                 >
                   Отмена
                 </button>
                 <button
                   onClick={() => {
+                    setError(null);
+                    setSuccess(null);
+
+                    // Нормализация и валидация данных
+                    const newPriceValue =
+                      modalData.newPrice === "" ||
+                      modalData.newPrice === undefined
+                        ? 0
+                        : parseFloat(modalData.newPrice);
+                    const newStockValue =
+                      modalData.newStock === "" ||
+                      modalData.newStock === undefined
+                        ? 0
+                        : parseInt(modalData.newStock);
+                    const usedPriceValue =
+                      modalData.usedPrice === "" ||
+                      modalData.usedPrice === undefined
+                        ? 0
+                        : parseFloat(modalData.usedPrice);
+                    const usedStockValue =
+                      modalData.usedStock === "" ||
+                      modalData.usedStock === undefined
+                        ? 0
+                        : parseInt(modalData.usedStock);
+
+                    // Валидация данных
+                    if (
+                      (newPriceValue !== undefined && isNaN(newPriceValue)) ||
+                      (usedPriceValue !== undefined && isNaN(usedPriceValue))
+                    ) {
+                      setError("Цена должна быть числом");
+                      return;
+                    }
+                    if (
+                      (newPriceValue !== undefined && newPriceValue < 0) ||
+                      (usedPriceValue !== undefined && usedPriceValue < 0)
+                    ) {
+                      setError("Цена не может быть отрицательной");
+                      return;
+                    }
+                    if (
+                      (newStockValue !== undefined && isNaN(newStockValue)) ||
+                      (usedStockValue !== undefined && isNaN(usedStockValue))
+                    ) {
+                      setError("Количество должно быть числом");
+                      return;
+                    }
+                    if (
+                      (newStockValue !== undefined && newStockValue < 0) ||
+                      (usedStockValue !== undefined && usedStockValue < 0)
+                    ) {
+                      setError("Количество не может быть отрицательным");
+                      return;
+                    }
+
                     handleUpdate(
                       modalData.diskId,
-                      "new",
-                      modalData.newPrice,
-                      modalData.newStock,
-                      modalData.gameId
-                    );
-                    handleUpdate(
-                      modalData.diskId,
-                      "used",
-                      modalData.usedPrice,
-                      modalData.usedStock,
+                      newPriceValue,
+                      newStockValue,
+                      usedPriceValue,
+                      usedStockValue,
                       modalData.gameId
                     );
                   }}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors"
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
+                  disabled={isSubmitting}
                 >
-                  Сохранить
+                  {isSubmitting ? "Сохранение..." : "Сохранить"}
                 </button>
               </div>
             </div>
