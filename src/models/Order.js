@@ -11,7 +11,6 @@ const OrderSchema = new mongoose.Schema(
     orderId: {
       type: String,
       sparse: true,
-      index: false, // Отключаем автоматический индекс, так как создаем его вручную ниже
     },
     items: [
       {
