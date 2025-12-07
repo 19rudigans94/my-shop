@@ -104,7 +104,73 @@ export async function POST(request) {
     const mongoose = await connectDB();
     const db = mongoose.connection.db;
 
-    const data = await request.json();
+    // Проверяем тип контента и парсим данные соответственно
+    const contentType = request.headers.get("content-type") || "";
+    let data;
+
+    if (contentType.includes("application/json")) {
+      try {
+        data = await request.json();
+      } catch (error) {
+        console.error("Ошибка при парсинге JSON:", error);
+        return Response.json(
+          {
+            success: false,
+            error: "Неверный формат JSON данных",
+          },
+          { status: 400 }
+        );
+      }
+    } else if (contentType.includes("multipart/form-data") || contentType.includes("application/x-www-form-urlencoded")) {
+      // Если пришел FormData, конвертируем в объект
+      try {
+        const formData = await request.formData();
+        data = {};
+        for (const [key, value] of formData.entries()) {
+          // Пытаемся парсить числовые значения
+          if (value === "null" || value === "undefined") {
+            data[key] = undefined;
+          } else if (!isNaN(value) && value !== "") {
+            data[key] = Number(value);
+          } else {
+            data[key] = value;
+          }
+        }
+      } catch (error) {
+        console.error("Ошибка при парсинге FormData:", error);
+        return Response.json(
+          {
+            success: false,
+            error: "Ошибка при обработке данных формы",
+          },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Пытаемся парсить как JSON по умолчанию
+      try {
+        const text = await request.text();
+        if (!text || text.trim() === "") {
+          return Response.json(
+            {
+              success: false,
+              error: "Тело запроса пусто",
+            },
+            { status: 400 }
+          );
+        }
+        data = JSON.parse(text);
+      } catch (error) {
+        console.error("Ошибка при парсинге тела запроса:", error);
+        return Response.json(
+          {
+            success: false,
+            error: "Неверный формат данных запроса",
+          },
+          { status: 400 }
+        );
+      }
+    }
     const {
       diskId,
       condition,
