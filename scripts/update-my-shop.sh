@@ -58,9 +58,12 @@ jobs:
 
             echo '🔄 Обновление из Git...';
             git fetch origin main;
+            echo '🌿 Переключение на ветку main...';
+            git checkout main || git checkout -b main origin/main;
             echo '🗑 Очистка локальных изменений...';
             git reset --hard origin/main;
             git clean -fd;
+            echo '✅ Репозиторий синхронизирован с origin/main';
 
             echo '📦 Установка зависимостей...';
             npm ci;
