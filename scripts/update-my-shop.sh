@@ -58,7 +58,9 @@ jobs:
 
             echo '🔄 Обновление из Git...';
             git fetch origin main;
+            echo '🗑 Очистка локальных изменений...';
             git reset --hard origin/main;
+            git clean -fd;
 
             echo '📦 Установка зависимостей...';
             npm ci;
