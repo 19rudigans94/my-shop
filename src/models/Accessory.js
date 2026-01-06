@@ -44,5 +44,16 @@ const accessorySchema = new mongoose.Schema({
   },
 });
 
+// Автоматическое обновление updatedAt при изменении документа
+accessorySchema.pre("save", function (next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+accessorySchema.pre("findOneAndUpdate", function (next) {
+  this.set({ updatedAt: Date.now() });
+  next();
+});
+
 export default mongoose.models.Accessory ||
   mongoose.model("Accessory", accessorySchema);
