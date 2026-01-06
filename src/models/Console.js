@@ -12,10 +12,13 @@ const consoleSchema = new mongoose.Schema({
   price: {
     type: Number,
     required: true,
+    min: 0,
   },
   stock: {
     type: Number,
     required: true,
+    min: 0,
+    default: 0,
   },
   youtubeUrl: {
     type: String,
@@ -44,7 +47,16 @@ const consoleSchema = new mongoose.Schema({
   },
 });
 
-const Console =
-  mongoose.models.Console || mongoose.model("Console", consoleSchema);
+// Автоматическое обновление updatedAt при изменении документа
+consoleSchema.pre("save", function (next) {
+  this.updatedAt = Date.now();
+  next();
+});
 
-export default Console;
+consoleSchema.pre("findOneAndUpdate", function (next) {
+  this.set({ updatedAt: Date.now() });
+  next();
+});
+
+export default mongoose.models.Console ||
+  mongoose.model("Console", consoleSchema);

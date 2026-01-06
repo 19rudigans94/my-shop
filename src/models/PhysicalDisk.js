@@ -9,6 +9,7 @@ const physicalDiskSchema = new mongoose.Schema({
   platform: {
     type: String,
     required: true,
+    enum: ["PS5", "PS4", "Xbox Series X|S", "Nintendo Switch", "PC"],
   },
   variants: [
     {
@@ -26,6 +27,7 @@ const physicalDiskSchema = new mongoose.Schema({
       price: {
         type: Number,
         required: true,
+        min: 0,
       },
     },
   ],
@@ -41,6 +43,17 @@ const physicalDiskSchema = new mongoose.Schema({
 
 // Составной индекс для уникальности комбинации игры и платформы
 physicalDiskSchema.index({ gameId: 1, platform: 1 }, { unique: true });
+
+// Автоматическое обновление updatedAt при изменении документа
+physicalDiskSchema.pre("save", function (next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+physicalDiskSchema.pre("findOneAndUpdate", function (next) {
+  this.set({ updatedAt: Date.now() });
+  next();
+});
 
 export default mongoose.models.PhysicalDisk ||
   mongoose.model("PhysicalDisk", physicalDiskSchema);

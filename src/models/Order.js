@@ -25,15 +25,18 @@ const OrderSchema = new mongoose.Schema(
         price: {
           type: Number,
           required: true,
+          min: 0,
         },
         quantity: {
           type: Number,
           required: true,
+          min: 1,
           default: 1,
         },
         total: {
           type: Number,
           required: true,
+          min: 0,
         },
         category: {
           type: String,
@@ -55,10 +58,12 @@ const OrderSchema = new mongoose.Schema(
     totalPrice: {
       type: Number,
       required: true,
+      min: 0,
     },
     totalItems: {
       type: Number,
       required: true,
+      min: 0,
     },
     // Новый формат контактных данных (PayLink)
     contactData: {
@@ -97,6 +102,7 @@ const OrderSchema = new mongoose.Schema(
     },
     amount: {
       type: Number,
+      min: 0,
     },
     paymentMethod: {
       type: String,
@@ -107,6 +113,7 @@ const OrderSchema = new mongoose.Schema(
     // Поля для совместимости со старым форматом
     totalAmount: {
       type: Number,
+      min: 0,
     },
     emailsSent: {
       customerNotified: {

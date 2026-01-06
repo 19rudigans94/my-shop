@@ -28,10 +28,12 @@ const digitalCopySchema = new mongoose.Schema({
   platform: {
     type: String,
     required: true,
+    enum: ["PS5", "PS4", "Xbox Series X|S", "Nintendo Switch", "PC"],
   },
   price: {
     type: Number,
     required: true,
+    min: 0,
   },
   isActive: {
     type: Boolean,
@@ -46,6 +48,17 @@ const digitalCopySchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+});
+
+// Автоматическое обновление updatedAt при изменении документа
+digitalCopySchema.pre("save", function (next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+digitalCopySchema.pre("findOneAndUpdate", function (next) {
+  this.set({ updatedAt: Date.now() });
+  next();
 });
 
 export default mongoose.models.DigitalCopy ||
