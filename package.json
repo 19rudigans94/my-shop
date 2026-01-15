@@ -34,5 +34,9 @@
     "@types/react": "19.0.12",
     "eslint": "^9.23.0",
     "eslint-config-next": "^15.5.9"
+  },
+  "overrides": {
+    "glob": "^11.0.0",
+    "z-schema": "^6.0.2"
   }
 }
