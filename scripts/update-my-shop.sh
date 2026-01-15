@@ -89,6 +89,16 @@ git clean -fd
 
 echo '✅ Репозиторий синхронизирован с origin/main'
 
+echo '🛑 Остановка PM2 перед установкой зависимостей...'
+pm2 stop my-shop 2>/dev/null || true
+pm2 delete my-shop 2>/dev/null || true
+sleep 2
+
+echo '🗑 Полная очистка node_modules и package-lock.json...'
+rm -rf node_modules
+rm -f package-lock.json
+sleep 1
+
 echo '📦 Установка зависимостей...'
 echo "Начало установки: $(date '+%Y-%m-%d %H:%M:%S')"
 if timeout 600 npm ci --prefer-offline --no-audit; then
@@ -114,22 +124,18 @@ echo '🚀 Перезапуск сервиса через PM2...'
 mkdir -p "$PROJECT_DIR/logs"
 
 # Проверяем наличие конфигурации PM2
-if [ -f "$PROJECT_DIR/ecosystem.config.js" ]; then
+if [ -f "$PROJECT_DIR/ecosystem.config.cjs" ]; then
+  echo "📋 Использование ecosystem.config.cjs для PM2"
+  pm2 start ecosystem.config.cjs || { echo '❌ Ошибка при запуске PM2'; exit 1; }
+  echo "✅ PM2 сервис запущен через ecosystem.config.cjs"
+elif [ -f "$PROJECT_DIR/ecosystem.config.js" ]; then
   echo "📋 Использование ecosystem.config.js для PM2"
-  if pm2 restart ecosystem.config.js; then
-    echo "✅ PM2 сервис перезапущен через ecosystem.config.js"
-  else
-    echo "⚠️ PM2 restart не удался, пробуем запустить..."
-    pm2 start ecosystem.config.js || { echo '❌ Ошибка при запуске PM2'; exit 1; }
-  fi
+  pm2 start ecosystem.config.js || { echo '❌ Ошибка при запуске PM2'; exit 1; }
+  echo "✅ PM2 сервис запущен через ecosystem.config.js"
 else
-  echo "⚠️ ecosystem.config.js не найден, используем базовую конфигурацию"
-  if pm2 restart my-shop; then
-    echo "✅ PM2 сервис перезапущен"
-  else
-    echo "⚠️ PM2 restart не удался, пробуем запустить..."
-    pm2 start npm --name my-shop -- start || { echo '❌ Ошибка при запуске PM2'; exit 1; }
-  fi
+  echo "⚠️ ecosystem.config не найден, используем базовую конфигурацию"
+  pm2 start npm --name my-shop -- start || { echo '❌ Ошибка при запуске PM2'; exit 1; }
+  echo "✅ PM2 сервис запущен"
 fi
 
 # Проверка статуса приложения
