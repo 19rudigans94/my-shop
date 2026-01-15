@@ -23,34 +23,26 @@ jobs:
       #   run: |
       #     scp -o StrictHostKeyChecking=no ./scripts/update-my-shop.sh ubuntu@82.115.49.188:/home/ubuntu/update-my-shop.sh
 
-      - name: Deploy to server
+      - name: Copy deploy script to server
         run: |
-          ssh -o StrictHostKeyChecking=no \
+          scp -o StrictHostKeyChecking=no \
               -o ServerAliveInterval=60 \
               -o ServerAliveCountMax=3 \
+              ./scripts/update-my-shop.sh ubuntu@82.115.49.188:/home/ubuntu/my-shop/scripts/update-my-shop.sh
+
+      - name: Deploy to server
+        timeout-minutes: 20
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+              -o ServerAliveInterval=15 \
+              -o ServerAliveCountMax=20 \
               -o ConnectTimeout=30 \
-              ubuntu@82.115.49.188 'bash -s' << 'EOF'
-            set -e;
-            echo '📁 Переход в папку проекта...';
-            cd ~/my-shop || { echo '❌ Папка my-shop не найдена'; exit 1; }
-            
-            echo '🔄 Обновление из Git...';
-            git fetch origin main;
-            echo '🌿 Переключение на ветку main...';
-            git checkout main || git checkout -b main origin/main;
-            echo '🗑 Очистка локальных изменений...';
-            git reset --hard origin/main;
-            git clean -fd;
-            echo '✅ Репозиторий синхронизирован с origin/main';
-            
-            echo '📦 Установка зависимостей...';
-            npm ci --prefer-offline --no-audit || npm install;
-            
-            echo '🛠 Сборка проекта...';
-            npm run build;
-            
-            echo '🚀 Перезапуск сервиса через PM2...';
-            pm2 restart my-shop || pm2 start npm --name my-shop -- start;
-            
-            echo '✅ Деплой успешно завершён.';
-          EOF
+              -o TCPKeepAlive=yes \
+              -o Compression=yes \
+              -o BatchMode=yes \
+              ubuntu@82.115.49.188 << 'ENDSSH'
+            set -e
+            cd ~/my-shop
+            chmod +x scripts/update-my-shop.sh
+            bash scripts/update-my-shop.sh
+          ENDSSH
