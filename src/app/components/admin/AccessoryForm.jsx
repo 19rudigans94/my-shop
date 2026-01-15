@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-const PLATFORMS = ["Xbox Series X|S", "Nintendo Switch", "PC", "Playstation"];
+const PLATFORMS = ["PS5", "PS4"];
 
 export default function AccessoryForm({ accessory, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
