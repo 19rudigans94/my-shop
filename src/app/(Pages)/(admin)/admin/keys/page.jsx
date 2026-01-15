@@ -294,9 +294,43 @@ export default function AdminKeysPage() {
     setIsDigitalModalOpen(true);
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm("Are you sure?")) return;
-    // Логика удаления
+  const handleDiskDelete = async (diskId, gameId, platform) => {
+    if (
+      !window.confirm(
+        "Удалить физический диск и все его варианты для этой платформы?"
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setError(null);
+
+      const response = await fetch("/api/admin/keys", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          diskId: diskId || undefined,
+          gameId: gameId || undefined,
+          platform: platform || undefined,
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        await fetchDisksData();
+        setSuccess("Запись успешно удалена");
+      } else {
+        setError(result.error || "Ошибка при удалении");
+      }
+    } catch (err) {
+      setError(err.message || "Произошла ошибка при удалении");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -382,7 +416,7 @@ export default function AdminKeysPage() {
                       {item.usedStock} шт. × {item.usedPrice}₸
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 space-x-2">
                     <button
                       onClick={() =>
                         openDiskModal({
@@ -400,6 +434,21 @@ export default function AdminKeysPage() {
                     >
                       Редактировать
                     </button>
+                    {item.diskId && (
+                      <button
+                        onClick={() =>
+                          handleDiskDelete(
+                            item.diskId,
+                            item.gameId,
+                            item.platform
+                          )
+                        }
+                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm transition-colors"
+                        disabled={isSubmitting}
+                      >
+                        Удалить
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

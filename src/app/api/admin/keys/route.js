@@ -47,39 +47,23 @@ export async function GET() {
         }
       }
 
-      // Если нет дисков для игры, создаем запись без платформы
-      if (platformsMap.size === 0) {
+      // Добавляем результат для каждой платформы
+      for (const [platformKey, diskData] of platformsMap.entries()) {
+        const newVariant = diskData.variants.find((v) => v.condition === "new");
+        const usedVariant = diskData.variants.find(
+          (v) => v.condition === "used"
+        );
+
         results.push({
           gameId: game._id,
           gameTitle: game.title,
-          platform: null,
-          diskId: null,
-          newPrice: 0,
-          usedPrice: 0,
-          newStock: 0,
-          usedStock: 0,
+          platform: diskData.platform,
+          diskId: diskData.diskId,
+          newPrice: newVariant ? newVariant.price : 0,
+          usedPrice: usedVariant ? usedVariant.price : 0,
+          newStock: newVariant ? newVariant.stock : 0,
+          usedStock: usedVariant ? usedVariant.stock : 0,
         });
-      } else {
-        // Добавляем результат для каждой платформы
-        for (const [platformKey, diskData] of platformsMap.entries()) {
-          const newVariant = diskData.variants.find(
-            (v) => v.condition === "new"
-          );
-          const usedVariant = diskData.variants.find(
-            (v) => v.condition === "used"
-          );
-
-          results.push({
-            gameId: game._id,
-            gameTitle: game.title,
-            platform: diskData.platform,
-            diskId: diskData.diskId,
-            newPrice: newVariant ? newVariant.price : 0,
-            usedPrice: usedVariant ? usedVariant.price : 0,
-            newStock: newVariant ? newVariant.stock : 0,
-            usedStock: usedVariant ? usedVariant.stock : 0,
-          });
-        }
       }
     }
 
@@ -121,7 +105,10 @@ export async function POST(request) {
           { status: 400 }
         );
       }
-    } else if (contentType.includes("multipart/form-data") || contentType.includes("application/x-www-form-urlencoded")) {
+    } else if (
+      contentType.includes("multipart/form-data") ||
+      contentType.includes("application/x-www-form-urlencoded")
+    ) {
       // Если пришел FormData, конвертируем в объект
       try {
         const formData = await request.formData();
@@ -184,8 +171,10 @@ export async function POST(request) {
       platform,
     } = data;
 
-    // Если diskId не предоставлен, создаем новую запись
-    if (!diskId) {
+    let resolvedDiskId = diskId ? new ObjectId(diskId) : null;
+
+    // Если diskId не предоставлен, пытаемся найти запись по gameId + platform
+    if (!resolvedDiskId) {
       if (!gameId) {
         return Response.json(
           {
@@ -233,33 +222,43 @@ export async function POST(request) {
         );
       }
 
-      // Создаем новую запись с указанными вариантами
-      const newDisk = {
-        gameId: new ObjectId(gameId),
+      const gameObjectId = new ObjectId(gameId);
+      const existingDisk = await db.collection("physicaldisks").findOne({
+        gameId: gameObjectId,
         platform: platform,
-        variants: [
-          {
-            condition: "new",
-            stock: finalNewStock,
-            price: finalNewPrice,
-          },
-          {
-            condition: "used",
-            stock: finalUsedStock,
-            price: finalUsedPrice,
-          },
-        ],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      const result = await db.collection("physicaldisks").insertOne(newDisk);
-
-      return Response.json({
-        success: true,
-        message: "Создана новая запись",
-        diskId: result.insertedId,
       });
+
+      if (existingDisk) {
+        resolvedDiskId = existingDisk._id;
+      } else {
+        // Создаем новую запись с указанными вариантами
+        const newDisk = {
+          gameId: gameObjectId,
+          platform: platform,
+          variants: [
+            {
+              condition: "new",
+              stock: finalNewStock,
+              price: finalNewPrice,
+            },
+            {
+              condition: "used",
+              stock: finalUsedStock,
+              price: finalUsedPrice,
+            },
+          ],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        const result = await db.collection("physicaldisks").insertOne(newDisk);
+
+        return Response.json({
+          success: true,
+          message: "Создана новая запись",
+          diskId: result.insertedId,
+        });
+      }
     }
 
     // Если diskId предоставлен, обновляем существующую запись
@@ -273,7 +272,7 @@ export async function POST(request) {
       // Сначала получаем текущий документ, чтобы проверить наличие вариантов
       const currentDisk = await db
         .collection("physicaldisks")
-        .findOne({ _id: new ObjectId(diskId) });
+        .findOne({ _id: resolvedDiskId });
 
       if (!currentDisk) {
         return Response.json(
@@ -299,7 +298,7 @@ export async function POST(request) {
         !hasNewVariant
       ) {
         await db.collection("physicaldisks").updateOne(
-          { _id: new ObjectId(diskId) },
+          { _id: resolvedDiskId },
           {
             $push: {
               variants: {
@@ -318,7 +317,7 @@ export async function POST(request) {
         !hasUsedVariant
       ) {
         await db.collection("physicaldisks").updateOne(
-          { _id: new ObjectId(diskId) },
+          { _id: resolvedDiskId },
           {
             $push: {
               variants: {
@@ -362,7 +361,7 @@ export async function POST(request) {
 
       // Выполняем одно атомарное обновление
       const result = await db.collection("physicaldisks").updateOne(
-        { _id: new ObjectId(diskId) },
+        { _id: resolvedDiskId },
         { $set: updateQuery },
         {
           arrayFilters: arrayFilters,
@@ -381,7 +380,7 @@ export async function POST(request) {
 
       // Логируем для отладки на продакшене
       console.log("Обновление диска:", {
-        diskId: diskId.toString(),
+        diskId: resolvedDiskId.toString(),
         newPrice,
         newStock,
         usedPrice,
@@ -400,7 +399,7 @@ export async function POST(request) {
       // Проверяем наличие варианта и добавляем, если его нет
       const currentDisk = await db
         .collection("physicaldisks")
-        .findOne({ _id: new ObjectId(diskId) });
+        .findOne({ _id: resolvedDiskId });
 
       if (!currentDisk) {
         return Response.json(
@@ -419,7 +418,7 @@ export async function POST(request) {
       // Если варианта нет - добавляем его
       if (!hasVariant) {
         await db.collection("physicaldisks").updateOne(
-          { _id: new ObjectId(diskId) },
+          { _id: resolvedDiskId },
           {
             $push: {
               variants: {
@@ -442,7 +441,7 @@ export async function POST(request) {
       updateQuery["updatedAt"] = new Date();
 
       const result = await db.collection("physicaldisks").updateOne(
-        { _id: new ObjectId(diskId) },
+        { _id: resolvedDiskId },
         { $set: updateQuery },
         {
           arrayFilters: [{ "variant.condition": condition }],
@@ -461,7 +460,7 @@ export async function POST(request) {
 
       // Логируем для отладки
       console.log("Обновление диска (старый формат):", {
-        diskId: diskId.toString(),
+        diskId: resolvedDiskId.toString(),
         condition,
         price,
         stock,
@@ -487,6 +486,96 @@ export async function POST(request) {
       {
         success: false,
         error: "Ошибка при обновлении данных: " + error.message,
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request) {
+  try {
+    const mongoose = await connectDB();
+    const db = mongoose.connection.db;
+    const contentType = request.headers.get("content-type") || "";
+    let data;
+
+    if (contentType.includes("application/json")) {
+      try {
+        data = await request.json();
+      } catch (error) {
+        console.error("Ошибка при парсинге JSON:", error);
+        return Response.json(
+          {
+            success: false,
+            error: "Неверный формат JSON данных",
+          },
+          { status: 400 }
+        );
+      }
+    } else {
+      try {
+        const text = await request.text();
+        if (!text || text.trim() === "") {
+          return Response.json(
+            {
+              success: false,
+              error: "Тело запроса пусто",
+            },
+            { status: 400 }
+          );
+        }
+        data = JSON.parse(text);
+      } catch (error) {
+        console.error("Ошибка при парсинге тела запроса:", error);
+        return Response.json(
+          {
+            success: false,
+            error: "Неверный формат данных запроса",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    const { diskId, gameId, platform } = data || {};
+
+    let deleteQuery = null;
+    if (diskId) {
+      deleteQuery = { _id: new ObjectId(diskId) };
+    } else if (gameId && platform) {
+      deleteQuery = { gameId: new ObjectId(gameId), platform: platform };
+    } else {
+      return Response.json(
+        {
+          success: false,
+          error: "Не указаны параметры для удаления",
+        },
+        { status: 400 }
+      );
+    }
+
+    const result = await db.collection("physicaldisks").deleteOne(deleteQuery);
+
+    if (result.deletedCount === 0) {
+      return Response.json(
+        {
+          success: false,
+          error: "Запись не найдена",
+        },
+        { status: 404 }
+      );
+    }
+
+    return Response.json({
+      success: true,
+      message: "Запись успешно удалена",
+    });
+  } catch (error) {
+    console.error("Ошибка при удалении данных:", error);
+    return Response.json(
+      {
+        success: false,
+        error: "Ошибка при удалении данных: " + error.message,
       },
       { status: 500 }
     );
