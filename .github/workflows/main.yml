@@ -11,19 +11,51 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up SSH agent
-        uses: webfactory/ssh-agent@v0.7.0
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Deploy to server
-        timeout-minutes: 20
+        timeout-minutes: 25
         run: |
+          SERVER_HOST="${{ secrets.SERVER_HOST }}"
+          SERVER_USER="${{ secrets.SERVER_USER }}"
+          SERVER_HOST="${SERVER_HOST:-82.115.49.188}"
+          SERVER_USER="${SERVER_USER:-ubuntu}"
+          echo "🚀 Начало деплоя на сервер..."
+          
+          # Проверка доступности сервера
+          echo "🔍 Проверка доступности сервера..."
+          if ! ssh -o ConnectTimeout=10 -o BatchMode=yes \
+              -o StrictHostKeyChecking=no \
+              ${SERVER_USER}@${SERVER_HOST} 'echo "Сервер доступен"' 2>/dev/null; then
+            echo "❌ Сервер недоступен"
+            exit 1
+          fi
+          
+          # Выполнение деплоя
           ssh -o StrictHostKeyChecking=no \
               -o ConnectTimeout=30 \
               -o ServerAliveInterval=15 \
               -o ServerAliveCountMax=20 \
               -o BatchMode=yes \
-              ubuntu@82.115.49.188 'cd ~/my-shop && bash scripts/update-my-shop.sh'
+              ${SERVER_USER}@${SERVER_HOST} 'cd ~/my-shop && bash scripts/update-my-shop.sh'
+          
+          # Проверка успешности деплоя
+          echo "🔍 Проверка статуса приложения после деплоя..."
+          if ssh -o StrictHostKeyChecking=no \
+              -o ConnectTimeout=10 \
+              -o BatchMode=yes \
+              ${SERVER_USER}@${SERVER_HOST} 'pm2 describe my-shop | grep -q "online"'; then
+            echo "✅ Деплой успешно завершён, приложение работает"
+          else
+            echo "❌ Приложение не запущено после деплоя"
+            ssh -o StrictHostKeyChecking=no \
+                -o ConnectTimeout=10 \
+                -o BatchMode=yes \
+                ${SERVER_USER}@${SERVER_HOST} 'pm2 status && pm2 logs my-shop --lines 30 --nostream'
+            exit 1
+          fi
