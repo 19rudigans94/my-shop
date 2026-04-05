@@ -152,4 +152,5 @@ ls -la .env.local
 
 # Проверьте содержимое (осторожно с секретами!)
 cat .env.local | grep -v PASSWORD
+####
 ```
