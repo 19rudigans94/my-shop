@@ -1,0 +1,43 @@
+services:
+  mongo:
+    image: mongo:6
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: 1admin
+      MONGO_INITDB_ROOT_PASSWORD: 1password
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+
+  app-dev:
+    build:
+      context: .
+      target: dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGODB_URI=mongodb://admin:password@mongo:27017/my-shop?authSource=admin
+    depends_on:
+      - mongo
+    profiles:
+      - dev
+
+  app-prod:
+    build:
+      context: .
+      target: prod
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGODB_URI=mongodb://admin:password@mongo:27017/my-shop?authSource=admin
+    depends_on:
+      - mongo
+    profiles:
+      - prod
+
+volumes:
+  mongo_data:

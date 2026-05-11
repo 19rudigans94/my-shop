@@ -98,6 +98,44 @@ tail -f ~/my-shop-deploy.log
    pm2 restart my-shop
    ```
 
+## 🐳 Docker развертывание
+
+### Локальная разработка
+
+1. Установите Docker и Docker Compose.
+
+2. Создайте файл `.env.local` с переменными окружения:
+   ```
+   MONGODB_URI=mongodb://admin:password@mongo:27017/my-shop?authSource=admin
+   # Другие переменные из 1.env.local
+   ```
+
+3. Запустите в режиме разработки:
+   ```bash
+   docker-compose --profile dev up --build
+   ```
+
+   Приложение будет доступно на http://localhost:3000 с hot-reload.
+
+### Production развертывание
+
+1. Соберите и запустите production контейнеры:
+   ```bash
+   docker-compose --profile prod up --build -d
+   ```
+
+2. Для остановки:
+   ```bash
+   docker-compose --profile prod down
+   ```
+
+### Переменные окружения для Docker
+
+В `.env.local` укажите:
+- `MONGODB_URI` - URI для подключения к MongoDB в контейнере (mongodb://admin:password@mongo:27017/my-shop?authSource=admin)
+
+MongoDB запускается в контейнере с аутентификацией. Данные сохраняются в volume `mongo_data`.
+
 Или откатитесь к предыдущему коммиту:
 
 ```bash
