@@ -151,7 +151,12 @@ export default function ConsolesAdminPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="relative w-16 h-16">
                       <Image
-                        src={console.image}
+                        src={
+                          console.images?.[0]?.thumbUrl ||
+                          console.images?.[0]?.url ||
+                          console.image ||
+                          blurDataURL
+                        }
                         alt={console.title}
                         placeholder="blur"
                         blurDataURL={blurDataURL}

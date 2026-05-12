@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import ImageUploader from "@/app/components/admin/ImageUploader";
 const PLATFORMS = ["PS5", "PS4"];
 
 export default function AccessoryForm({ accessory, onSubmit, onCancel }) {
@@ -10,7 +11,7 @@ export default function AccessoryForm({ accessory, onSubmit, onCancel }) {
     platform: "",
     price: "",
     stock: "0",
-    image: "",
+    images: [],
   });
 
   useEffect(() => {
@@ -21,7 +22,22 @@ export default function AccessoryForm({ accessory, onSubmit, onCancel }) {
         platform: accessory.platform || "",
         price: accessory.price?.toString() || "",
         stock: accessory.stock?.toString() || "0",
-        image: accessory.image || "",
+        images: Array.isArray(accessory.images)
+          ? accessory.images
+          : accessory.image
+          ? [
+              {
+                url: accessory.image,
+                thumbUrl: accessory.image,
+                filename: "",
+                alt: "",
+                size: 0,
+                width: 0,
+                height: 0,
+                uploadedAt: new Date(),
+              },
+            ]
+          : [],
       });
     }
   }, [accessory]);
@@ -140,20 +156,14 @@ export default function AccessoryForm({ accessory, onSubmit, onCancel }) {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            URL изображения
-          </label>
-          <input
-            type="url"
-            value={formData.image}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, image: e.target.value }))
-            }
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
-            required
-          />
-        </div>
+      </div>
+
+      <div>
+        <ImageUploader
+          category="accessories"
+          images={formData.images}
+          onChange={(images) => setFormData((prev) => ({ ...prev, images }))}
+        />
       </div>
 
       <div>

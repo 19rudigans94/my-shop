@@ -30,7 +30,45 @@ const consoleSchema = new mongoose.Schema({
   },
   image: {
     type: String,
-    required: true,
+  },
+  images: {
+    type: [
+      {
+        filename: {
+          type: String,
+          required: true,
+        },
+        url: {
+          type: String,
+          required: true,
+        },
+        thumbUrl: {
+          type: String,
+          required: true,
+        },
+        alt: {
+          type: String,
+          default: "",
+        },
+        size: {
+          type: Number,
+          default: 0,
+        },
+        width: {
+          type: Number,
+          default: 0,
+        },
+        height: {
+          type: Number,
+          default: 0,
+        },
+        uploadedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+    default: [],
   },
   slug: {
     type: String,

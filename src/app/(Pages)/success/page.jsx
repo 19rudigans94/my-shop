@@ -396,7 +396,12 @@ function SuccessPageContent() {
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
                         <img
-                          src={item.image}
+                          src={
+                            item.image ||
+                            item.images?.[0]?.thumbUrl ||
+                            item.images?.[0]?.url ||
+                            "/images/placeholder.svg"
+                          }
                           alt={item.title}
                           className="w-16 h-16 object-cover rounded-lg"
                         />

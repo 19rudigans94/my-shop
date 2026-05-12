@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import ImageUploader from "@/app/components/admin/ImageUploader";
 import Image from "next/image";
 
 export default function ConsoleForm({ console, onSubmit, onCancel }) {
@@ -10,8 +11,8 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
     state: true,
     price: "",
     stock: "",
-    image: "",
     youtubeUrl: "",
+    images: [],
   });
 
   useEffect(() => {
@@ -22,8 +23,23 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
         state: console.state ?? true,
         price: console.price || "",
         stock: console.stock || "",
-        image: console.image || "",
         youtubeUrl: console.youtubeUrl || "",
+        images: Array.isArray(console.images)
+          ? console.images
+          : console.image
+          ? [
+              {
+                url: console.image,
+                thumbUrl: console.image,
+                filename: "",
+                alt: "",
+                size: 0,
+                width: 0,
+                height: 0,
+                uploadedAt: new Date(),
+              },
+            ]
+          : [],
       });
     }
   }, [console]);
@@ -103,34 +119,28 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            URL изображения
-          </label>
-          <input
-            type="url"
-            value={formData.image}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, image: e.target.value }))
-            }
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
-            required
-          />
-        </div>
+      </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            URL видео
-          </label>
-          <input
-            type="url"
-            value={formData.youtubeUrl}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, youtubeUrl: e.target.value }))
-            }
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
-          />
-        </div>
+      <div>
+        <ImageUploader
+          category="consoles"
+          images={formData.images}
+          onChange={(images) => setFormData((prev) => ({ ...prev, images }))}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          URL видео
+        </label>
+        <input
+          type="url"
+          value={formData.youtubeUrl}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, youtubeUrl: e.target.value }))
+          }
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+        />
       </div>
 
       <div>

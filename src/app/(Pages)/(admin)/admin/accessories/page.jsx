@@ -151,7 +151,12 @@ export default function AccessoriesAdminPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="relative w-16 h-16">
                       <Image
-                        src={accessory.image}
+                        src={
+                          accessory.images?.[0]?.thumbUrl ||
+                          accessory.images?.[0]?.url ||
+                          accessory.image ||
+                          "/images/placeholder.svg"
+                        }
                         alt={accessory.title}
                         fill
                         className="object-cover rounded"

@@ -38,22 +38,39 @@ export async function getGameById(id) {
  * Создать игру
  */
 export async function createGame(data) {
-  // Валидация обязательных полей
-  validateRequiredFields(data, ["title", "platforms", "description", "image"]);
+  if (!Array.isArray(data.images) || data.images.length === 0) {
+    if (data.image) {
+      data.images = [
+        {
+          url: data.image,
+          thumbUrl: data.image,
+          filename: "",
+          alt: "",
+          size: 0,
+          width: 0,
+          height: 0,
+          uploadedAt: new Date(),
+        },
+      ];
+    }
+  }
 
-  // Нормализация числовых полей
+  validateRequiredFields(data, ["title", "platforms", "description", "images"]);
+
   const normalized = normalizeNumericFields(data, ["price", "stock"]);
 
-  // Проверка на отрицательные значения
   validateNonNegative({
     price: normalized.price,
     stock: normalized.stock,
   });
 
-  // Генерация уникального slug
+  normalized.images = Array.isArray(normalized.images)
+    ? normalized.images
+    : [];
+  normalized.image = normalized.images[0]?.url || normalized.image;
+
   normalized.slug = await generateUniqueSlug(Game, normalized.title);
 
-  // Создание игры
   const game = await Game.create(normalized);
 
   // Создание физических дисков для каждой платформы
@@ -95,19 +112,34 @@ export async function updateGame(id, data) {
     throw new Error("Не указан ID игры");
   }
 
-  // Если изменилось название, обновляем slug
+  if (!Array.isArray(data.images) || data.images.length === 0) {
+    if (data.image) {
+      data.images = [
+        {
+          url: data.image,
+          thumbUrl: data.image,
+          filename: "",
+          alt: "",
+          size: 0,
+          width: 0,
+          height: 0,
+          uploadedAt: new Date(),
+        },
+      ];
+    }
+  }
+
   if (data.title) {
     data.slug = await generateUniqueSlug(Game, data.title, id);
   }
 
-  // Нормализация числовых полей
   const normalized = normalizeNumericFields(data, ["price", "stock"]);
-
-  // Проверка на отрицательные значения
-  validateNonNegative({
-    price: normalized.price,
-    stock: normalized.stock,
-  });
+  normalized.images = Array.isArray(normalized.images)
+    ? normalized.images
+    : undefined;
+  if (normalized.images) {
+    normalized.image = normalized.images[0]?.url || normalized.image;
+  }
 
   const game = await Game.findByIdAndUpdate(
     id,

@@ -85,7 +85,11 @@ export async function createPayLink(cartData, request) {
           quantity: item.quantity,
           total: item.price * item.quantity,
           category: item.category,
-          image: item.image,
+          image:
+            item.image ||
+            item.images?.[0]?.thumbUrl ||
+            item.images?.[0]?.url ||
+            "/images/placeholder.svg",
           platform: item.platform,
           type:
             item.category === "games" && item.platform ? "digital" : "physical",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import ImageUploader from "@/app/components/admin/ImageUploader";
 
 const PLATFORMS = [
   "PS5",
@@ -17,7 +18,7 @@ export default function GameForm({ game, onSubmit, onCancel }) {
     title: "",
     description: "",
     platforms: [],
-    image: "",
+    images: [],
     youtubeUrl: "",
     features: [],
     genre: [],
@@ -29,7 +30,22 @@ export default function GameForm({ game, onSubmit, onCancel }) {
         title: game.title || "",
         description: game.description || "",
         platforms: game.platforms || [],
-        image: game.image || "",
+        images: Array.isArray(game.images)
+          ? game.images
+          : game.image
+          ? [
+              {
+                url: game.image,
+                thumbUrl: game.image,
+                filename: "",
+                alt: "",
+                size: 0,
+                width: 0,
+                height: 0,
+                uploadedAt: new Date(),
+              },
+            ]
+          : [],
         youtubeUrl: game.youtubeUrl || "",
         features: game.features || [],
         genre: Array.isArray(game.genre) ? game.genre : [],
@@ -48,7 +64,7 @@ export default function GameForm({ game, onSubmit, onCancel }) {
     const requiredFields = {
       title: "Название",
       description: "Описание",
-      image: "URL изображения",
+      images: "Изображение",
       youtubeUrl: "URL YouTube видео",
     };
 
@@ -169,18 +185,11 @@ export default function GameForm({ game, onSubmit, onCancel }) {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            URL изображения
-          </label>
-          <input
-            type="url"
-            value={formData.image}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, image: e.target.value }))
-            }
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
-            required
+        <div className="col-span-2">
+          <ImageUploader
+            category="games"
+            images={formData.images}
+            onChange={(images) => setFormData((prev) => ({ ...prev, images }))}
           />
         </div>
 

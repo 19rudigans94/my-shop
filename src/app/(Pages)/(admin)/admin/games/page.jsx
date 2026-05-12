@@ -149,7 +149,12 @@ export default function GamesAdminPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="relative w-16 h-16">
                       <Image
-                        src={game.image}
+                        src={
+                          game.images?.[0]?.thumbUrl ||
+                          game.images?.[0]?.url ||
+                          game.image ||
+                          "/images/placeholder.svg"
+                        }
                         alt={game.title}
                         fill
                         className="object-cover rounded"

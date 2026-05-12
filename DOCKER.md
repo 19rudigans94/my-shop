@@ -1,10 +1,6 @@
 # 🐳 Docker Setup Guide для my-shop
 
-## Что создано
-
-Приложение упаковано в Docker контейнеры с поддержкой разработки и production режимов.
-
-### Созданные файлы
+## Созданные файлы
 - **Dockerfile** — многоэтапная сборка с dev и prod стадиями
 - **docker-compose.yml** — оркестрация контейнеров (Next.js app + MongoDB)
 - **.env.example** — пример конфигурации переменных окружения
@@ -42,7 +38,7 @@ docker-compose --profile prod up --build -d
 
 ```bash
 # MongoDB connection string для Docker
-MONGODB_URI=mongodb://admin:password@mongo:27017/my-shop?authSource=admin
+MONGODB_URI=mongodb://1admin:1password@mongo:27017/my-shop?authSource=admin
 
 # Добавьте другие переменные из 1.env.local:
 # PAYLINK_API_KEY=...
@@ -50,14 +46,6 @@ MONGODB_URI=mongodb://admin:password@mongo:27017/my-shop?authSource=admin
 ```
 
 **Важно:** Не коммитьте `.env.local` в git, используйте `.gitignore`
-
-### Автоматизм
-
-Docker Compose автоматически:
-- Запускает MongoDB с аутентификацией
-- Создает volume `mongo_data` для персистентности данных
-- Монтирует исходный код для hot-reload в dev режиме
-- Подключает оба контейнера в одну сеть
 
 ## 📦 Структура Dockerfile
 
@@ -75,12 +63,7 @@ Docker Compose автоматически:
    - `public/` — публичные файлы
    - Без dev зависимостей (меньше размер образа)
 
-## 📊 Размер образа
-
-- Dev образ: ~700 MB (с dev зависимостями)
-- Prod образ: ~350 MB (без dev deps, оптимизирован)
-
-## 🔐 Безопасность
+##  Безопасность
 
 ### MongoDB в Docker
 - Включена аутентификация (admin / password)

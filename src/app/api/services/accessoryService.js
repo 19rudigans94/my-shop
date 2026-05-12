@@ -74,20 +74,39 @@ export async function getAccessoryById(id) {
  * Создать аксессуар
  */
 export async function createAccessory(data) {
-  // Валидация обязательных полей
+  if (!Array.isArray(data.images) || data.images.length === 0) {
+    if (data.image) {
+      data.images = [
+        {
+          url: data.image,
+          thumbUrl: data.image,
+          filename: "",
+          alt: "",
+          size: 0,
+          width: 0,
+          height: 0,
+          uploadedAt: new Date(),
+        },
+      ];
+    }
+  }
+
   validateRequiredFields(data, [
     "title",
     "platform",
     "price",
     "description",
-    "image",
+    "images",
     "stock",
   ]);
 
-  // Нормализация числовых полей
   const normalized = normalizeNumericFields(data, ["price", "stock"]);
 
-  // Генерация уникального slug
+  normalized.images = Array.isArray(normalized.images)
+    ? normalized.images
+    : [];
+  normalized.image = normalized.images[0]?.url || normalized.image;
+
   normalized.slug = await generateUniqueSlug(Accessory, normalized.title);
 
   return await Accessory.create(normalized);
@@ -101,13 +120,34 @@ export async function updateAccessory(id, data) {
     throw new Error("Не указан ID аксессуара");
   }
 
-  // Если изменилось название, обновляем slug
+  if (!Array.isArray(data.images) || data.images.length === 0) {
+    if (data.image) {
+      data.images = [
+        {
+          url: data.image,
+          thumbUrl: data.image,
+          filename: "",
+          alt: "",
+          size: 0,
+          width: 0,
+          height: 0,
+          uploadedAt: new Date(),
+        },
+      ];
+    }
+  }
+
   if (data.title) {
     data.slug = await generateUniqueSlug(Accessory, data.title, id);
   }
 
-  // Нормализация числовых полей
   const normalized = normalizeNumericFields(data, ["stock"]);
+  normalized.images = Array.isArray(normalized.images)
+    ? normalized.images
+    : undefined;
+  if (normalized.images) {
+    normalized.image = normalized.images[0]?.url || normalized.image;
+  }
 
   const accessory = await Accessory.findByIdAndUpdate(
     id,
