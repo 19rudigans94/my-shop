@@ -6,9 +6,7 @@ const jetBrainsMono = JetBrains_Mono({
   subsets: ["latin", "cyrillic"],
 });
 
-export const metadataBase = new URL(
-  process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
-);
+export const metadataBase = new URL("https://goldgames.kz");
 
 export const metadata = {
   title: "GoldGames — магазин игр, консолей и аксессуаров",
@@ -32,7 +30,7 @@ export const metadata = {
     locale: "ru_RU",
     images: [
       {
-        url: "/images/og-image.png",
+        url: "https://goldgames.kz/images/og-image.png",
         alt: "GoldGames — магазин игр и консолей",
       },
     ],

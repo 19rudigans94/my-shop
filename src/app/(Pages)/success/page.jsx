@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import useCartStore from "@/app/store/useCartStore";
 
@@ -35,55 +36,14 @@ function SuccessPageContent() {
         // Получаем данные заказа из localStorage
         const pendingOrderData = localStorage.getItem("pendingOrder");
 
-        console.log("🔍 Проверка localStorage:", {
-          hasPendingOrder: !!pendingOrderData,
-          allKeys: Object.keys(localStorage),
-          pendingOrderLength: pendingOrderData?.length || 0,
-        });
-
-        console.log("🔍 Поиск данных заказа:", {
-          hasLocalStorage: !!pendingOrderData,
-          cartItemsCount: items.length,
-          urlParams: { orderId, paymentId, amount },
-        });
-
         if (pendingOrderData) {
           const orderData = JSON.parse(pendingOrderData);
-
-          console.log(
-            "📦 Восстановлены данные заказа из localStorage:",
-            orderData
-          );
-
-          // Проверяем структуру данных
-          if (!orderData.contactData || !orderData.contactData.email) {
-            console.error("❌ Отсутствуют контактные данные в localStorage:", {
-              hasContactData: !!orderData.contactData,
-              email: orderData.contactData?.email,
-              phone: orderData.contactData?.phone,
-            });
-          } else {
-            console.log("✅ Контактные данные найдены:", {
-              email: orderData.contactData.email,
-              phone: orderData.contactData.phone,
-            });
-          }
 
           // Отправляем email с подтверждением заказа
           if (!emailStatus.sent) {
             setEmailStatus((prev) => ({ ...prev, loading: true, error: null }));
 
             try {
-              console.log("📧 Отправка запроса на email API...");
-              console.log("📤 Данные для отправки:", {
-                orderData: {
-                  items: orderData.items?.length || 0,
-                  totalPrice: orderData.totalPrice,
-                  contactData: orderData.contactData,
-                },
-                paymentId: paymentId || orderId,
-              });
-
               const emailResponse = await fetch("/api/send-order-email", {
                 method: "POST",
                 headers: {
@@ -95,25 +55,9 @@ function SuccessPageContent() {
                 }),
               });
 
-              console.log("📨 Ответ от email API:", {
-                status: emailResponse.status,
-                statusText: emailResponse.statusText,
-                ok: emailResponse.ok,
-              });
-
               const emailResult = await emailResponse.json();
 
               if (emailResult.success) {
-                console.log("✅ Email отправлены:", emailResult.results);
-                console.log(
-                  "📧 Клиенту:",
-                  emailResult.results?.customerEmail ? "✅" : "❌"
-                );
-                console.log(
-                  "📧 Менеджеру:",
-                  emailResult.results?.managerEmail ? "✅" : "❌"
-                );
-
                 setEmailStatus({
                   sent: true,
                   loading: false,
@@ -122,11 +66,7 @@ function SuccessPageContent() {
 
                 // Очищаем localStorage только после успешной отправки email
                 localStorage.removeItem("pendingOrder");
-                console.log(
-                  "🧹 localStorage очищен после успешной отправки email"
-                );
               } else {
-                console.error("❌ Ошибка отправки email:", emailResult.error);
                 setEmailStatus({
                   sent: false,
                   loading: false,
@@ -135,15 +75,12 @@ function SuccessPageContent() {
                 // НЕ очищаем localStorage при ошибке, чтобы можно было повторить попытку
               }
             } catch (emailError) {
-              console.error("❌ Ошибка при отправке email:", emailError);
               setEmailStatus({
                 sent: false,
                 loading: false,
                 error: emailError.message,
               });
             }
-          } else {
-            console.log("📧 Email уже был отправлен ранее");
           }
 
           // Устанавливаем детали заказа для отображения
@@ -158,10 +95,6 @@ function SuccessPageContent() {
 
           // НЕ очищаем localStorage здесь - сделаем это после отправки email
         } else if (items.length > 0) {
-          // Fallback: используем данные из корзины, если localStorage пуст
-          console.log(
-            "⚠️ Данные заказа не найдены в localStorage, используем корзину"
-          );
           setOrderDetails({
             items: [...items],
             totalAmount: getTotalPrice(),
@@ -177,13 +110,12 @@ function SuccessPageContent() {
           setIsLoading(false);
         }, 1500);
       } catch (error) {
-        console.error("❌ Ошибка при обработке успешного платежа:", error);
         setIsLoading(false);
       }
     };
 
     handleSuccessfulPayment();
-  }, [items, clearCart, getTotalPrice, orderId, paymentId]);
+  }, [items, clearCart, getTotalPrice, orderId, paymentId, amount, emailStatus.sent]);
 
   const handleContinueShopping = () => {
     router.push("/games");
@@ -198,16 +130,9 @@ function SuccessPageContent() {
     setEmailStatus((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
-      console.log(
-        `🧪 Ручное тестирование email (${
-          useSimpleApi ? "простой" : "полный"
-        } API)...`
-      );
-
       const pendingOrderData = localStorage.getItem("pendingOrder");
 
       if (!pendingOrderData) {
-        console.error("❌ Нет данных в localStorage для тестирования");
         setEmailStatus({
           sent: false,
           loading: false,
@@ -217,16 +142,9 @@ function SuccessPageContent() {
       }
 
       const orderData = JSON.parse(pendingOrderData);
-
-      console.log(
-        "📤 Отправка тестового email с реальными данными:",
-        orderData
-      );
-
       const apiEndpoint = useSimpleApi
         ? "/api/simple-email"
         : "/api/send-order-email";
-      console.log(`🔗 Используем API: ${apiEndpoint}`);
 
       const response = await fetch(apiEndpoint, {
         method: "POST",
@@ -240,7 +158,6 @@ function SuccessPageContent() {
       });
 
       const result = await response.json();
-      console.log("📧 Результат тестовой отправки:", result);
 
       if (result.success) {
         setEmailStatus({
@@ -251,7 +168,6 @@ function SuccessPageContent() {
 
         // Очищаем localStorage после успешной отправки
         localStorage.removeItem("pendingOrder");
-        console.log("🧹 localStorage очищен после ручной отправки email");
       } else {
         setEmailStatus({
           sent: false,
@@ -260,7 +176,6 @@ function SuccessPageContent() {
         });
       }
     } catch (error) {
-      console.error("❌ Ошибка тестирования email:", error);
       setEmailStatus({
         sent: false,
         loading: false,
@@ -395,16 +310,19 @@ function SuccessPageContent() {
                         className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg animate-slide-in-right"
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
-                        <img
-                          src={
-                            item.image ||
-                            item.images?.[0]?.thumbUrl ||
-                            item.images?.[0]?.url ||
-                            "/images/placeholder.svg"
-                          }
-                          alt={item.title}
-                          className="w-16 h-16 object-cover rounded-lg"
-                        />
+                        <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+                          <Image
+                            src={
+                              item.image ||
+                              item.images?.[0]?.thumbUrl ||
+                              item.images?.[0]?.url ||
+                              "/images/placeholder.svg"
+                            }
+                            alt={item.title}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900 dark:text-white">
                             {item.title}

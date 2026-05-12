@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 export default function ImageUploader({ category, images = [], onChange }) {
   const [error, setError] = useState("");
@@ -76,10 +77,11 @@ export default function ImageUploader({ category, images = [], onChange }) {
         {images.map((image, index) => (
           <div key={`${image.url}-${index}`} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
             <div className="relative h-32 overflow-hidden rounded-md bg-gray-100 dark:bg-gray-700">
-              <img
-                src={image.thumbUrl || image.url}
+              <Image
+                src={image.thumbUrl || image.url || "/images/placeholder.svg"}
                 alt={image.alt || `image-${index + 1}`}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
               />
             </div>
             <div className="mt-3 space-y-3">

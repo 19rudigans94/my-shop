@@ -3,7 +3,7 @@ import * as gameService from "@/app/api/services/gameService";
 import * as consoleService from "@/app/api/services/consoleService";
 import * as accessoryService from "@/app/api/services/accessoryService";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://goldgames.kz";
 
 const staticRoutes = [
   { url: `${SITE_URL}/games`, lastModified: new Date().toISOString() },

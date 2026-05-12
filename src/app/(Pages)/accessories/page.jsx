@@ -63,7 +63,7 @@ export default function AccessoriesPage() {
     };
 
     fetchAccessories();
-  }, [pagination.page]);
+  }, [pagination.page, pagination.limit]);
 
   const handlePageChange = (newPage) => {
     setPagination((prev) => ({ ...prev, page: newPage }));

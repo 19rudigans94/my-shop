@@ -117,7 +117,7 @@ function FailedPageContent() {
     });
 
     setIsLoading(false);
-  }, [errorCode, errorMessage, orderId, amount, items, getTotalPrice]);
+  }, [errorCode, errorMessage, orderId, amount, paymentErrorCode, items, getTotalPrice]);
 
   const handleRetryPayment = () => {
     // Возвращаем пользователя в корзину для повторной попытки оплаты

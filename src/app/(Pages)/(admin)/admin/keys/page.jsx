@@ -24,12 +24,12 @@ export default function AdminKeysPage() {
   const [isDigitalModalOpen, setIsDigitalModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedDigitalId, setSelectedDigitalId] = useState(null);
+
   const [credentialModalData, setCredentialModalData] = useState({
     login: "",
     password: "",
   });
-  const [showCredentialModal, setShowCredentialModal] = useState(false);
+
   const [success, setSuccess] = useState(null);
 
   // Функция загрузки данных о физических дисках
@@ -54,7 +54,6 @@ export default function AdminKeysPage() {
       const result = await response.json();
       if (result.success) {
         // Данные теперь структурированы по-другому - наборы копий с учетными данными внутри
-        console.log(result.data, "result.data");
         setDigitalData(result.data);
       } else {
         setError(result.error);
@@ -73,19 +72,19 @@ export default function AdminKeysPage() {
         setAllGames(result.games || []);
       }
     } catch (err) {
-      console.error("Ошибка при загрузке игр:", err);
+      // silent
     }
   };
 
   // Загрузка всех данных
-  const fetchAllData = async () => {
-    setLoading(true);
-    await Promise.all([fetchDisksData(), fetchDigitalData(), fetchAllGames()]);
-    setLoading(false);
-  };
-
   useEffect(() => {
-    fetchAllData();
+    const loadAllData = async () => {
+      setLoading(true);
+      await Promise.all([fetchDisksData(), fetchDigitalData(), fetchAllGames()]);
+      setLoading(false);
+    };
+
+    loadAllData();
   }, []);
 
   // Обработчик обновления физических дисков
@@ -133,14 +132,6 @@ export default function AdminKeysPage() {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  // Функция валидации данных
-  const validateDigitalData = (data) => {
-    if (!data.gameId) return "Выберите игру";
-    if (!data.platform) return "Выберите платформу";
-    if (!data.price || data.price < 0) return "Укажите корректную цену";
-    return null;
   };
 
   // Улучшенный обработчик обновления цифровых копий
@@ -231,7 +222,6 @@ export default function AdminKeysPage() {
         setSuccess("Статус набора успешно обновлен");
       }
     } catch (error) {
-      console.error("Ошибка:", error);
       setError("Произошла ошибка при обновлении данных");
     } finally {
       setIsLoading(false);

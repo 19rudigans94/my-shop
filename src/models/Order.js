@@ -5,12 +5,12 @@ const OrderSchema = new mongoose.Schema(
     // Новый формат (PayLink)
     uid: {
       type: String,
-      sparse: true, // Позволяет null/undefined значения для совместимости
+      index: { sparse: true },
     },
     // Старый формат (совместимость)
     orderId: {
       type: String,
-      sparse: true,
+      index: { sparse: true },
     },
     items: [
       {
@@ -142,8 +142,6 @@ const OrderSchema = new mongoose.Schema(
 );
 
 // Индексы для быстрого поиска
-OrderSchema.index({ uid: 1 }, { sparse: true });
-OrderSchema.index({ orderId: 1 }, { sparse: true });
 OrderSchema.index({ status: 1 });
 OrderSchema.index({ paymentStatus: 1 });
 OrderSchema.index({ "contactData.email": 1 }, { sparse: true });
