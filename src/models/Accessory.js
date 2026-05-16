@@ -33,7 +33,7 @@ const accessorySchema = new mongoose.Schema({
       {
         filename: {
           type: String,
-          required: true,
+          default: "",
         },
         url: {
           type: String,
