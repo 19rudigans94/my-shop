@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import AccessoryCard from "@/app/components/AccessoryCard";
+import { AccessoryCard } from "@/entities/accessory";
 
 export default function AccessoriesPage() {
   const router = useRouter();

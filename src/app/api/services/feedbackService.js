@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { validateFeedback } from "../../utils/validation";
+import { validateFeedback } from "@/shared/utils/validation.js";
 
 /**
  * Отправить обратную связь на email

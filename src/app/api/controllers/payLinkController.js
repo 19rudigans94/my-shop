@@ -1,4 +1,4 @@
-import { successResponse, errorResponse } from "../../utils/responseHandler";
+import { successResponse, errorResponse } from "@/shared/utils/responseHandler.js";
 import * as payLinkService from "../services/payLinkService";
 
 /**

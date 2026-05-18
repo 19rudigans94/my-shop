@@ -1,4 +1,4 @@
-import { processUploadImage } from "@/utils/imageProcessor";
+import { processUploadImage } from "@/shared/utils/imageProcessor.js";
 
 const ALLOWED_CATEGORIES = ["accessories", "consoles", "games"];
 

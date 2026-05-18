@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import GameForm from "@/app/components/admin/GameForm";
+import { GameForm } from "@/widgets/admin-forms";
 
 export default function GamesAdminPage() {
   const [games, setGames] = useState([]);

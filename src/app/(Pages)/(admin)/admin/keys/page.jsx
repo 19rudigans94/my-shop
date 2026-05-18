@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Modal from "@/app/components/Modal";
+import { Modal } from "@/shared/ui";
 
 const PLATFORMS = [
   "PS5",

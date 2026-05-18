@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import CartItems from "./components/CartItems";
-import CartSummary from "./components/CartSummary";
-import useCartStore from "@/app/store/useCartStore";
+import { CartItems, CartSummary } from "@/entities/cart";
+import useCartStore from "@/entities/cart/model/useCartStore.js";
 import Link from "next/link";
 
 export default function CartPage() {

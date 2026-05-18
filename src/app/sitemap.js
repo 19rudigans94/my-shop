@@ -1,7 +1,7 @@
-import { ensureDbConnection } from "@/app/utils/dbConnection";
-import * as gameService from "@/app/api/services/gameService";
-import * as consoleService from "@/app/api/services/consoleService";
-import * as accessoryService from "@/app/api/services/accessoryService";
+import { ensureDbConnection } from "@/shared/lib/dbConnection.js";
+import * as gameService from "@/entities/game/api/gameService.js";
+import * as consoleService from "@/entities/console/api/consoleService.js";
+import * as accessoryService from "@/entities/accessory/api/accessoryService.js";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://goldgames.kz";
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import Order from "@/models/Order";
+import connectDB from "@/shared/lib/mongodb.js";
+import Order from "@/entities/order/model/Order.js";
 
 async function handleVerification(request) {
   try {

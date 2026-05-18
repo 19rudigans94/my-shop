@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { swaggerSpec } from "@/lib/swagger";
+import { swaggerSpec } from "@/shared/lib/swagger.js";
 
 /**
  * @swagger

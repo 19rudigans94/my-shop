@@ -1,11 +1,11 @@
-import { ensureDbConnection } from "../../utils/dbConnection";
+import { ensureDbConnection } from "@/shared/lib/dbConnection.js";
 import {
   successResponse,
   errorResponse,
   notFoundResponse,
   dataResponse,
-} from "../../utils/responseHandler";
-import * as gameService from "../services/gameService";
+} from "@/shared/utils/responseHandler.js";
+import * as gameService from "@/entities/game/api/gameService.js";
 
 /**
  * GET /api/games - Получить список всех игр

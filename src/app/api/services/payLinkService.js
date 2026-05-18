@@ -1,5 +1,5 @@
-import { getTimePlus30Minutes } from "@/app/utils/lifeTime";
-import { createOrder } from "./orderService";
+import { getTimePlus30Minutes } from "@/shared/utils/lifeTime.js";
+import { createOrder } from "@/entities/order/api/orderService.js";
 
 /**
  * Создать платежную ссылку PayLink

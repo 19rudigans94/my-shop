@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import {
   sendOrderConfirmationEmail,
   sendManagerNotificationEmail,
-} from "@/app/utils/sendEmail";
+} from "@/shared/utils/sendEmail.js";
 
 export async function POST(request) {
   try {

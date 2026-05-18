@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import useCartStore from "@/app/store/useCartStore";
+import useCartStore from "@/entities/cart/model/useCartStore.js";
 
 function FailedPageContent() {
   const router = useRouter();

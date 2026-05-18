@@ -1,10 +1,10 @@
-import { ensureDbConnection } from "../../utils/dbConnection";
+import { ensureDbConnection } from "@/shared/lib/dbConnection.js";
 import {
   successResponse,
   errorResponse,
   notFoundResponse,
-} from "../../utils/responseHandler";
-import * as accessoryService from "../services/accessoryService";
+} from "@/shared/utils/responseHandler.js";
+import * as accessoryService from "@/entities/accessory/api/accessoryService.js";
 
 /**
  * GET /api/accessories - Получить список аксессуаров с пагинацией

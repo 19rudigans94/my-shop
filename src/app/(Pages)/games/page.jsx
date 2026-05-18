@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-import GameCard from "@/app/components/GameCard";
+import { GameCard } from "@/entities/game";
 
 export default function GamesPage() {
   const router = useRouter();

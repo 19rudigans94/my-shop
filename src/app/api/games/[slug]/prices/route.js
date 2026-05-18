@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import Game from "@/models/Game";
-import PhysicalDisk from "@/models/PhysicalDisk";
+import connectDB from "@/shared/lib/mongodb.js";
+import Game from "@/entities/game/model/Game.js";
+import PhysicalDisk from "@/entities/game/model/PhysicalDisk.js";
 
 export async function GET(request, context) {
   try {

@@ -1,7 +1,7 @@
-import { ensureDbConnection } from "@/app/utils/dbConnection";
-import Game from "@/models/Game";
-import Console from "@/models/Console";
-import Accessory from "@/models/Accessory";
+import { ensureDbConnection } from "@/shared/lib/dbConnection.js";
+import Game from "@/entities/game/model/Game.js";
+import Console from "@/entities/console/model/Console.js";
+import Accessory from "@/entities/accessory/model/Accessory.js";
 
 const BUCKET = "goldgames-assets";
 const BASE_HOST = `${BUCKET}.object.pscloud.io`;

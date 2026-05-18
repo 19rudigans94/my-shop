@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import {
   sendOrderConfirmationEmail,
   sendManagerNotificationEmail,
-} from "@/app/utils/sendEmail";
-import connectDB from "@/lib/mongodb";
-import DigitalCopy from "@/models/DigitalCopy";
+} from "@/shared/utils/sendEmail.js";
+import connectDB from "@/shared/lib/mongodb.js";
+import DigitalCopy from "@/entities/game/model/DigitalCopy.js";
 import nodemailer from "nodemailer";
 
 /**
@@ -239,7 +239,7 @@ export async function POST(request) {
             );
 
             // Попробуем найти игру по названию и получить её ID
-            const Game = (await import("@/models/Game")).default;
+            const Game = (await import("@/entities/game/model/Game.js")).default;
 
             const gameByTitle = await Game.findOne({
               $or: [

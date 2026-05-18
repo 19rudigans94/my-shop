@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import ConsoleCard from "@/app/components/ConsoleCard";
+import { ConsoleCard } from "@/entities/console";
 
 export default function ConsolePage() {
   const router = useRouter();

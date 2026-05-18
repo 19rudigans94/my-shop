@@ -2,7 +2,7 @@ import {
   successResponse,
   errorResponse,
   badRequestResponse,
-} from "../../utils/responseHandler";
+} from "@/shared/utils/responseHandler.js";
 import * as feedbackService from "../services/feedbackService";
 
 /**

@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import useCartStore from "@/app/store/useCartStore";
+import useCartStore from "@/entities/cart/model/useCartStore.js";
 
 function SuccessPageContent() {
   const router = useRouter();

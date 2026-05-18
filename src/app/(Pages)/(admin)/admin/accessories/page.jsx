@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import AccessoryForm from "@/app/components/admin/AccessoryForm";
+import { AccessoryForm } from "@/widgets/admin-forms";
 
 export default function AccessoriesAdminPage() {
   const [accessories, setAccessories] = useState([]);

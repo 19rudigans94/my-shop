@@ -1,11 +1,11 @@
-import { ensureDbConnection } from "../../utils/dbConnection";
+import { ensureDbConnection } from "@/shared/lib/dbConnection.js";
 import {
   successResponse,
   errorResponse,
   notFoundResponse,
   badRequestResponse,
-} from "../../utils/responseHandler";
-import * as digitalCopyService from "../services/digitalCopyService";
+} from "@/shared/utils/responseHandler.js";
+import * as digitalCopyService from "@/entities/game/api/digitalCopyService.js";
 
 /**
  * GET /api/games/[slug]/digital - Получить цифровые копии игры

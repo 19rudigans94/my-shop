@@ -1,11 +1,11 @@
-import { ensureDbConnection } from "../../utils/dbConnection";
+import { ensureDbConnection } from "@/shared/lib/dbConnection.js";
 import {
   successResponse,
   errorResponse,
   notFoundResponse,
   dataResponse,
-} from "../../utils/responseHandler";
-import * as consoleService from "../services/consoleService";
+} from "@/shared/utils/responseHandler.js";
+import * as consoleService from "@/entities/console/api/consoleService.js";
 
 /**
  * GET /api/consoles - Получить список всех консолей
