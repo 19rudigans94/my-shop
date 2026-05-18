@@ -114,7 +114,7 @@ export default function CartItems() {
                   </div>
 
                   <p className="text-lg font-semibold text-gray-900 dark:text-white mt-1">
-                    {item.price.toLocaleString()} ₸
+                    {item.price.toLocaleString('ru-RU')} ₸
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

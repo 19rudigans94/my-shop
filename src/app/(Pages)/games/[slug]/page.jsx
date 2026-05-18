@@ -3,7 +3,15 @@ import { ensureDbConnection } from "@/app/utils/dbConnection";
 import * as gameService from "@/app/api/services/gameService";
 import GameDetailsClient from "./GameDetailsClient";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://goldgames.kz";
+const DEFAULT_IMAGE = "https://goldgames.kz/images/og-image.png";
+
+const normalizeImageUrl = (url) => {
+  if (!url) return DEFAULT_IMAGE;
+  if (url.startsWith("http")) return url;
+  if (url.startsWith("/")) return `${SITE_URL}${url}`;
+  return url;
+};
 
 const normalizeGame = (game) => {
   if (!game) return null;
@@ -25,7 +33,8 @@ async function getGame(slug) {
 }
 
 export async function generateMetadata({ params }) {
-  const game = await getGame(params.slug);
+  const { slug } = await params;
+  const game = await getGame(slug);
 
   if (!game) {
     return {
@@ -47,15 +56,16 @@ export async function generateMetadata({ params }) {
     openGraph: {
       title,
       description,
-      url: `${SITE_URL}/games/${params.slug}`,
+      url: `${SITE_URL}/games/${slug}`,
       type: "article",
       images: [
         {
-          url:
+          url: normalizeImageUrl(
             game.images?.[0]?.url ||
-            game.images?.[0]?.thumbUrl ||
-            game.image ||
-            "/images/og-image.png",
+              game.images?.[0]?.thumbUrl ||
+              game.image ||
+              DEFAULT_IMAGE
+          ),
           alt: game.title,
         },
       ],
@@ -65,17 +75,20 @@ export async function generateMetadata({ params }) {
       title,
       description,
       images: [
-        game.images?.[0]?.url ||
-        game.images?.[0]?.thumbUrl ||
-        game.image ||
-        "/images/og-image.png",
+        normalizeImageUrl(
+          game.images?.[0]?.url ||
+            game.images?.[0]?.thumbUrl ||
+            game.image ||
+            DEFAULT_IMAGE
+        ),
       ],
     },
   };
 }
 
 export default async function GameDetailsPage({ params }) {
-  const game = await getGame(params.slug);
+  const { slug } = await params;
+  const game = await getGame(slug);
 
   if (!game) {
     notFound();
@@ -86,10 +99,12 @@ export default async function GameDetailsPage({ params }) {
     "@type": "Product",
     name: game.title,
     image: [
-      game.images?.[0]?.url ||
-      game.images?.[0]?.thumbUrl ||
-      game.image ||
-      "/images/og-image.png",
+      normalizeImageUrl(
+        game.images?.[0]?.url ||
+          game.images?.[0]?.thumbUrl ||
+          game.image ||
+          DEFAULT_IMAGE
+      ),
     ],
     description: game.description,
     sku: game._id,
@@ -101,7 +116,7 @@ export default async function GameDetailsPage({ params }) {
         game.stock > 0
           ? "https://schema.org/InStock"
           : "https://schema.org/OutOfStock",
-      url: `${SITE_URL}/games/${params.slug}`,
+      url: `${SITE_URL}/games/${slug}`,
     },
   };
 

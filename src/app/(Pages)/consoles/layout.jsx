@@ -6,7 +6,7 @@ export const metadata = {
     title: "Консоли | GoldGames",
     description:
       "Ассортимент игровых консолей PlayStation, Xbox и Nintendo — лучшие модели по выгодным ценам.",
-    url: "/consoles",
+    url: "https://goldgames.kz/consoles",
     type: "website",
   },
   twitter: {

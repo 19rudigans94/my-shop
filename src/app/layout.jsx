@@ -24,7 +24,7 @@ export const metadata = {
     title: "GoldGames — магазин игр и консолей",
     description:
       "Лучшие видеоигры, игровые консоли и аксессуары в интернет-магазине GoldGames.",
-    url: "/",
+    url: "https://goldgames.kz/",
     siteName: "GoldGames",
     type: "website",
     locale: "ru_RU",
@@ -40,7 +40,7 @@ export const metadata = {
     title: "GoldGames — магазин игр и консолей",
     description:
       "Лучшие видеоигры, игровые консоли и аксессуары в интернет-магазине GoldGames.",
-    images: ["/images/og-image.png"],
+    images: ["https://goldgames.kz/images/og-image.png"],
   },
   icons: {
     icon: "/favicon.ico",
@@ -50,7 +50,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ru" suppressHydrationWarning>
+    <html lang="ru" suppressHydrationWarning data-scroll-behavior="smooth">
       <body className={`${jetBrainsMono.className} antialiased`}>
         <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors">
           <Header />

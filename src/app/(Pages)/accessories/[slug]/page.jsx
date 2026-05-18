@@ -3,7 +3,15 @@ import { ensureDbConnection } from "@/app/utils/dbConnection";
 import * as accessoryService from "@/app/api/services/accessoryService";
 import AccessoryDetailsClient from "./AccessoryDetailsClient";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://goldgames.kz";
+const DEFAULT_IMAGE = "https://goldgames.kz/images/og-image.png";
+
+const normalizeImageUrl = (url) => {
+  if (!url) return DEFAULT_IMAGE;
+  if (url.startsWith("http")) return url;
+  if (url.startsWith("/")) return `${SITE_URL}${url}`;
+  return url;
+};
 
 const normalizeAccessory = (accessory) => {
   if (!accessory) return null;
@@ -23,7 +31,8 @@ async function getAccessory(slug) {
 }
 
 export async function generateMetadata({ params }) {
-  const accessory = await getAccessory(params.slug);
+  const { slug } = await params;
+  const accessory = await getAccessory(slug);
 
   if (!accessory) {
     return {
@@ -43,15 +52,16 @@ export async function generateMetadata({ params }) {
     openGraph: {
       title,
       description,
-      url: `${SITE_URL}/accessories/${params.slug}`,
-      type: "product",
+      url: `${SITE_URL}/accessories/${slug}`,
+      type: "website",
       images: [
         {
-          url:
+          url: normalizeImageUrl(
             accessory.images?.[0]?.url ||
-            accessory.images?.[0]?.thumbUrl ||
-            accessory.image ||
-            "/images/og-image.png",
+              accessory.images?.[0]?.thumbUrl ||
+              accessory.image ||
+              DEFAULT_IMAGE
+          ),
           alt: accessory.title,
         },
       ],
@@ -61,17 +71,20 @@ export async function generateMetadata({ params }) {
       title,
       description,
       images: [
-        accessory.images?.[0]?.url ||
-        accessory.images?.[0]?.thumbUrl ||
-        accessory.image ||
-        "/images/og-image.png",
+        normalizeImageUrl(
+          accessory.images?.[0]?.url ||
+            accessory.images?.[0]?.thumbUrl ||
+            accessory.image ||
+            DEFAULT_IMAGE
+        ),
       ],
     },
   };
 }
 
 export default async function AccessoryDetailsPage({ params }) {
-  const accessory = await getAccessory(params.slug);
+  const { slug } = await params;
+  const accessory = await getAccessory(slug);
 
   if (!accessory) {
     notFound();
@@ -82,10 +95,12 @@ export default async function AccessoryDetailsPage({ params }) {
     "@type": "Product",
     name: accessory.title,
     image: [
-      accessory.images?.[0]?.url ||
-      accessory.images?.[0]?.thumbUrl ||
-      accessory.image ||
-      "/images/og-image.png",
+      normalizeImageUrl(
+        accessory.images?.[0]?.url ||
+          accessory.images?.[0]?.thumbUrl ||
+          accessory.image ||
+          DEFAULT_IMAGE
+      ),
     ],
     description: accessory.description,
     sku: accessory._id,
@@ -97,7 +112,7 @@ export default async function AccessoryDetailsPage({ params }) {
         accessory.stock > 0
           ? "https://schema.org/InStock"
           : "https://schema.org/OutOfStock",
-      url: `${SITE_URL}/accessories/${params.slug}`,
+      url: `${SITE_URL}/accessories/${slug}`,
     },
   };
 

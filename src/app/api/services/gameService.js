@@ -6,6 +6,7 @@ import {
   validateNonNegative,
   validateRequiredFields,
 } from "../../utils/validation";
+import { deleteFromPSCloud, extractKeyFromUrl } from "@/utils/psStorage";
 
 /**
  * Получить все игры
@@ -112,6 +113,11 @@ export async function updateGame(id, data) {
     throw new Error("Не указан ID игры");
   }
 
+  const currentGame = await Game.findById(id);
+  if (!currentGame) {
+    throw new Error("Игра не найдена");
+  }
+
   if (!Array.isArray(data.images) || data.images.length === 0) {
     if (data.image) {
       data.images = [
@@ -151,6 +157,19 @@ export async function updateGame(id, data) {
     throw new Error("Игра не найдена");
   }
 
+  const oldUrls = new Set(
+    (currentGame.images || []).flatMap((img) => [img.url, img.thumbUrl]).filter(Boolean)
+  );
+  const newUrls = new Set(
+    (normalized.images || []).flatMap((img) => [img.url, img.thumbUrl]).filter(Boolean)
+  );
+  for (const url of oldUrls) {
+    if (!newUrls.has(url)) {
+      const key = extractKeyFromUrl(url);
+      if (key) await deleteFromPSCloud(key).catch(() => {});
+    }
+  }
+
   return game;
 }
 
@@ -165,6 +184,13 @@ export async function deleteGame(id) {
   const game = await Game.findByIdAndDelete(id);
   if (!game) {
     throw new Error("Игра не найдена");
+  }
+
+  for (const img of game.images || []) {
+    for (const url of [img.url, img.thumbUrl].filter(Boolean)) {
+      const key = extractKeyFromUrl(url);
+      if (key) await deleteFromPSCloud(key).catch(() => {});
+    }
   }
 
   return game;

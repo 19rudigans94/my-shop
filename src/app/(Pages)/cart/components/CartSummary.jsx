@@ -162,7 +162,7 @@ export default function CartSummary() {
         <div className="space-y-3 mb-6">
           <div className="flex justify-between text-gray-600 dark:text-gray-400">
             <span>Товары ({totalItems})</span>
-            <span>{totalPrice.toLocaleString()} ₸</span>
+            <span>{totalPrice.toLocaleString('ru-RU')} ₸</span>
           </div>
 
           <div className="flex justify-between text-gray-600 dark:text-gray-400">
@@ -174,7 +174,7 @@ export default function CartSummary() {
             <div className="flex justify-between font-semibold text-lg text-gray-900 dark:text-white">
               <span>Итого к оплате</span>
               <span className="text-amber-600 dark:text-amber-400">
-                {totalPrice.toLocaleString()} ₸
+                {totalPrice.toLocaleString('ru-RU')} ₸
               </span>
             </div>
           </div>

@@ -4,6 +4,7 @@ import {
   normalizeNumericFields,
   validateRequiredFields,
 } from "../../utils/validation";
+import { deleteFromPSCloud, extractKeyFromUrl } from "@/utils/psStorage";
 
 /**
  * Получить все аксессуары с пагинацией
@@ -120,6 +121,11 @@ export async function updateAccessory(id, data) {
     throw new Error("Не указан ID аксессуара");
   }
 
+  const currentAccessory = await Accessory.findById(id);
+  if (!currentAccessory) {
+    throw new Error("Аксессуар не найден");
+  }
+
   if (!Array.isArray(data.images) || data.images.length === 0) {
     if (data.image) {
       data.images = [
@@ -159,6 +165,19 @@ export async function updateAccessory(id, data) {
     throw new Error("Аксессуар не найден");
   }
 
+  const oldUrls = new Set(
+    (currentAccessory.images || []).flatMap((img) => [img.url, img.thumbUrl]).filter(Boolean)
+  );
+  const newUrls = new Set(
+    (normalized.images || []).flatMap((img) => [img.url, img.thumbUrl]).filter(Boolean)
+  );
+  for (const url of oldUrls) {
+    if (!newUrls.has(url)) {
+      const key = extractKeyFromUrl(url);
+      if (key) await deleteFromPSCloud(key).catch(() => {});
+    }
+  }
+
   return accessory;
 }
 
@@ -173,6 +192,13 @@ export async function deleteAccessory(id) {
   const accessory = await Accessory.findByIdAndDelete(id);
   if (!accessory) {
     throw new Error("Аксессуар не найден");
+  }
+
+  for (const img of accessory.images || []) {
+    for (const url of [img.url, img.thumbUrl].filter(Boolean)) {
+      const key = extractKeyFromUrl(url);
+      if (key) await deleteFromPSCloud(key).catch(() => {});
+    }
   }
 
   return accessory;

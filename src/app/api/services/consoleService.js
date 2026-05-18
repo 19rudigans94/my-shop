@@ -5,6 +5,7 @@ import {
   validateNonNegative,
   validateRequiredFields,
 } from "../../utils/validation";
+import { deleteFromPSCloud, extractKeyFromUrl } from "@/utils/psStorage";
 
 /**
  * Получить все консоли
@@ -87,6 +88,11 @@ export async function updateConsole(id, data) {
     throw new Error("Не указан ID консоли");
   }
 
+  const currentConsole = await Console.findById(id);
+  if (!currentConsole) {
+    throw new Error("Консоль не найдена");
+  }
+
   if (!Array.isArray(data.images) || data.images.length === 0) {
     if (data.image) {
       data.images = [
@@ -116,17 +122,30 @@ export async function updateConsole(id, data) {
     normalized.image = normalized.images[0]?.url || normalized.image;
   }
 
-  const console = await Console.findByIdAndUpdate(
+  const updatedConsole = await Console.findByIdAndUpdate(
     id,
     { $set: normalized },
     { new: true, runValidators: true }
   );
 
-  if (!console) {
+  if (!updatedConsole) {
     throw new Error("Консоль не найдена");
   }
 
-  return console;
+  const oldUrls = new Set(
+    (currentConsole.images || []).flatMap((img) => [img.url, img.thumbUrl]).filter(Boolean)
+  );
+  const newUrls = new Set(
+    (normalized.images || []).flatMap((img) => [img.url, img.thumbUrl]).filter(Boolean)
+  );
+  for (const url of oldUrls) {
+    if (!newUrls.has(url)) {
+      const key = extractKeyFromUrl(url);
+      if (key) await deleteFromPSCloud(key).catch(() => {});
+    }
+  }
+
+  return updatedConsole;
 }
 
 /**
@@ -137,10 +156,17 @@ export async function deleteConsole(id) {
     throw new Error("Не указан ID консоли");
   }
 
-  const console = await Console.findByIdAndDelete(id);
-  if (!console) {
+  const deletedConsole = await Console.findByIdAndDelete(id);
+  if (!deletedConsole) {
     throw new Error("Консоль не найдена");
   }
 
-  return console;
+  for (const img of deletedConsole.images || []) {
+    for (const url of [img.url, img.thumbUrl].filter(Boolean)) {
+      const key = extractKeyFromUrl(url);
+      if (key) await deleteFromPSCloud(key).catch(() => {});
+    }
+  }
+
+  return deletedConsole;
 }

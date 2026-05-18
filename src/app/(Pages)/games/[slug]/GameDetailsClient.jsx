@@ -125,7 +125,7 @@ export default function GameDetailsClient({ game }) {
                   Цена
                 </h2>
                 <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {Number(game.price).toLocaleString()} ₸
+                  {Number(game.price).toLocaleString('ru-RU')} ₸
                 </div>
                 <div className="mt-4">
                   <AddToCartButton item={game} className="w-full" />

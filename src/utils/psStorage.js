@@ -55,5 +55,12 @@ export async function deleteFromPSCloud(key) {
 
 export function getPublicUrl(key) {
   const base = IMAGE_BASE_URL.replace(/\/$/, "");
-  return `${base}/${key}`;
+  return `${base}/${PSCLOUD_BUCKET}/${key}`;
+}
+
+export function extractKeyFromUrl(url) {
+  if (!url) return null;
+  const base = IMAGE_BASE_URL.replace(/\/$/, "");
+  const prefix = `${base}/${PSCLOUD_BUCKET}/`;
+  return url.startsWith(prefix) ? url.slice(prefix.length) : null;
 }

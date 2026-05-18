@@ -6,7 +6,7 @@ export const metadata = {
     title: "Аксессуары | GoldGames",
     description:
       "Полный каталог игровых аксессуаров: контроллеры, зарядки, наушники и многое другое для ваших консолей.",
-    url: "/accessories",
+    url: "https://goldgames.kz/accessories",
     type: "website",
   },
   twitter: {

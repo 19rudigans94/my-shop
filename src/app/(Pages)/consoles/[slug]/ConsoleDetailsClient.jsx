@@ -87,7 +87,7 @@ export default function ConsoleDetailsClient({ console: item }) {
                   Цена
                 </h2>
                 <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {Number(item.price).toLocaleString()} ₸
+                  {Number(item.price).toLocaleString('ru-RU')} ₸
                 </div>
                 <AddToCartButton item={item} className="w-full mt-4" />
               </div>

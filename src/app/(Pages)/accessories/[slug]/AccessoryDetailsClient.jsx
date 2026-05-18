@@ -98,7 +98,7 @@ export default function AccessoryDetailsClient({ accessory }) {
                   Цена
                 </h2>
                 <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {Number(accessory.price).toLocaleString()} ₸
+                  {Number(accessory.price).toLocaleString('ru-RU')} ₸
                 </div>
                 <AddToCartButton item={accessory} className="w-full mt-4" />
               </div>

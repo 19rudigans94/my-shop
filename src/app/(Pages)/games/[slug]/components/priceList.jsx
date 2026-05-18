@@ -21,12 +21,9 @@ export default function PriceList() {
         setLoading(true);
         setError(null);
 
-        console.log("Начинаем загрузку цен для slug:", params.slug);
-
         // Загрузка цен физических копий
         const response = await fetch(`/api/games/${params.slug}/prices`);
         const data = await response.json();
-        console.warn("Цены физических копий:", data);
         if (!response.ok || !data.success) {
           throw new Error(data?.error || "Ошибка загрузки цен");
         }
@@ -40,31 +37,11 @@ export default function PriceList() {
           }
         }
 
-        console.log("Начинаем загрузку цифровых копий");
-
         // Загрузка информации о цифровых копиях
         const digitalResponse = await fetch(
           `/api/games/${params.slug}/digital`
         );
-        console.log("Статус ответа цифровых копий:", digitalResponse.status);
-        console.log(
-          "Заголовки ответа цифровых копий:",
-          digitalResponse.headers.get("content-type")
-        );
-        const rawText = await digitalResponse.clone().text();
-        console.log("Сырое тело цифрового ответа (до парсинга):", rawText);
-        console.log("Объект digitalResponse:", digitalResponse);
-
-        let digitalData;
-        try {
-          digitalData = JSON.parse(rawText);
-        } catch (jsonErr) {
-          console.error("Ошибка при парсинге JSON цифровых копий:", jsonErr);
-          throw new Error("Неверный формат JSON в ответе цифровых копий");
-        }
-
-        console.log("digitalData (после парсинга JSON):", digitalData);
-        console.warn("Данные цифровых копий:", digitalData);
+        const digitalData = await digitalResponse.json();
 
         if (Array.isArray(digitalData?.copies)) {
           setDigitalInfo({
@@ -88,7 +65,6 @@ export default function PriceList() {
           throw new Error("Ошибка загрузки цифровых копий");
         }
       } catch (err) {
-        console.error("Ошибка при загрузке цен:", err);
         setError(err?.message || "Произошла ошибка при загрузке цен");
       } finally {
         setLoading(false);

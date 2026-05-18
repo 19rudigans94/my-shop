@@ -6,7 +6,7 @@ export const metadata = {
     title: "Игры | GoldGames",
     description:
       "Каталог видеоигр для PlayStation, Xbox и PC — купите любимые игры онлайн в GoldGames.",
-    url: "/games",
+    url: "https://goldgames.kz/games",
     type: "website",
   },
   twitter: {
