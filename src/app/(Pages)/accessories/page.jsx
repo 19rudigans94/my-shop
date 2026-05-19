@@ -2,7 +2,22 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { AccessoryCard } from "@/entities/accessory";
+import Search from "@/app/components/Search";
+import Filters from "@/app/components/Filters";
+import MobileFilters from "@/app/components/Filters/MobileFilters";
+import ActiveFilters from "@/app/components/Filters/ActiveFilters";
+import { useFilters } from "@/app/hooks/useFilters";
+import { accessoriesFilters } from "@/app/config/filters";
+import AccessoryCard from "@/app/components/AccessoryCard";
+
+// Преобразуем массив фильтров в объект для инициализации
+const filtersConfig = accessoriesFilters.reduce((acc, filter) => {
+  acc[filter.id] = {
+    name: filter.name,
+    options: filter.options,
+  };
+  return acc;
+}, {});
 
 export default function AccessoriesPage() {
   const router = useRouter();
@@ -16,6 +31,15 @@ export default function AccessoriesPage() {
     totalPages: 0,
   });
 
+  const {
+    filters,
+    setFilter,
+    removeFilter,
+    clearFilters,
+    isMobileFiltersOpen,
+    setIsMobileFiltersOpen,
+  } = useFilters(filtersConfig);
+
   useEffect(() => {
     const fetchAccessories = async () => {
       try {
@@ -23,6 +47,15 @@ export default function AccessoriesPage() {
         setError(null);
 
         const queryParams = new URLSearchParams();
+
+        // Добавляем параметры фильтрации
+        if (filters && typeof filters === "object") {
+          Object.entries(filters).forEach(([key, value]) => {
+            if (value && value !== "all") {
+              queryParams.append(key, value);
+            }
+          });
+        }
 
         // Добавляем параметры пагинации
         queryParams.append("page", pagination.page);
@@ -63,7 +96,7 @@ export default function AccessoriesPage() {
     };
 
     fetchAccessories();
-  }, [pagination.page, pagination.limit]);
+  }, [filters, pagination.page]);
 
   const handlePageChange = (newPage) => {
     setPagination((prev) => ({ ...prev, page: newPage }));

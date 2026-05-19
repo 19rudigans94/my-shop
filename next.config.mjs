@@ -3,14 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   images: {
     unoptimized: true,
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "goldgames-assets.object.pscloud.io",
-      },
-    ],
   },
-  output: 'standalone',
   // compiler: {
   //   removeConsole: process.env.NODE_ENV === "production",
   // },

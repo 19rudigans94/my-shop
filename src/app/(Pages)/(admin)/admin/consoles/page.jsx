@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { ConsoleForm } from "@/widgets/admin-forms";
+import ConsoleForm from "@/app/components/admin/ConsoleForm";
 
 const blurDataURL =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=";
@@ -151,12 +151,7 @@ export default function ConsolesAdminPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="relative w-16 h-16">
                       <Image
-                        src={
-                          console.images?.[0]?.thumbUrl ||
-                          console.images?.[0]?.url ||
-                          console.image ||
-                          blurDataURL
-                        }
+                        src={console.image}
                         alt={console.title}
                         placeholder="blur"
                         blurDataURL={blurDataURL}

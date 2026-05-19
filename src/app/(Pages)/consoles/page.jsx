@@ -2,19 +2,40 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ConsoleCard } from "@/entities/console";
+import Search from "@/app/components/Search";
+import Filters from "@/app/components/Filters";
+import MobileFilters from "@/app/components/Filters/MobileFilters";
+import ActiveFilters from "@/app/components/Filters/ActiveFilters";
+import { useFilters } from "@/app/hooks/useFilters";
+import { consolesFilters } from "@/app/config/filters";
+import ConsoleCard from "@/app/components/ConsoleCard";
 
 export default function ConsolePage() {
   const router = useRouter();
   const [consoles, setConsoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const {
+    filters,
+    setFilter,
+    removeFilter,
+    clearFilters,
+    isMobileFiltersOpen,
+    setIsMobileFiltersOpen,
+  } = useFilters(consolesFilters);
 
   useEffect(() => {
     const fetchConsoles = async () => {
       try {
         setLoading(true);
         const queryParams = new URLSearchParams();
+
+        // Добавляем параметры фильтрации
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value && value !== "all") {
+            queryParams.append(key, value);
+          }
+        });
 
         const response = await fetch(`/api/consoles?${queryParams.toString()}`);
         if (!response.ok) throw new Error("Ошибка загрузки консолей");
@@ -29,7 +50,7 @@ export default function ConsolePage() {
     };
 
     fetchConsoles();
-  }, []);
+  }, [filters]);
 
   if (loading) {
     return (

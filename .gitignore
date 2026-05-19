@@ -28,8 +28,6 @@ yarn-error.log*
 .env
 .env.local
 .env.production
-*.env.local
-1.env.local
 
 # vercel
 .vercel
@@ -41,10 +39,3 @@ next-env.d.ts
 # IDE
 .idea
 .vscode
-
-# PM2 logs
-logs/
-*.log
-
-# Backup directories
-.backup-*

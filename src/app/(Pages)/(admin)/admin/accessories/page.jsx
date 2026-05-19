@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { AccessoryForm } from "@/widgets/admin-forms";
+import AccessoryForm from "@/app/components/admin/AccessoryForm";
 
 export default function AccessoriesAdminPage() {
   const [accessories, setAccessories] = useState([]);
@@ -151,12 +151,7 @@ export default function AccessoriesAdminPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="relative w-16 h-16">
                       <Image
-                        src={
-                          accessory.images?.[0]?.thumbUrl ||
-                          accessory.images?.[0]?.url ||
-                          accessory.image ||
-                          "/images/placeholder.svg"
-                        }
+                        src={accessory.image}
                         alt={accessory.title}
                         fill
                         className="object-cover rounded"

@@ -1,21 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Modal } from "@/shared/ui";
-
-const PLATFORMS = [
-  "PS5",
-  "PS4",
-  "Xbox Series X|S",
-  "Xbox One",
-  "Nintendo Switch",
-  "PC",
-];
+import Modal from "@/app/components/Modal";
 
 export default function AdminKeysPage() {
   const [disksData, setDisksData] = useState([]);
   const [digitalData, setDigitalData] = useState([]);
-  const [allGames, setAllGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modalData, setModalData] = useState(null);
@@ -24,12 +14,12 @@ export default function AdminKeysPage() {
   const [isDigitalModalOpen, setIsDigitalModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
+  const [selectedDigitalId, setSelectedDigitalId] = useState(null);
   const [credentialModalData, setCredentialModalData] = useState({
     login: "",
     password: "",
   });
-
+  const [showCredentialModal, setShowCredentialModal] = useState(false);
   const [success, setSuccess] = useState(null);
 
   // Функция загрузки данных о физических дисках
@@ -54,6 +44,7 @@ export default function AdminKeysPage() {
       const result = await response.json();
       if (result.success) {
         // Данные теперь структурированы по-другому - наборы копий с учетными данными внутри
+        console.log(result.data, "result.data");
         setDigitalData(result.data);
       } else {
         setError(result.error);
@@ -63,58 +54,31 @@ export default function AdminKeysPage() {
     }
   };
 
-  // Функция загрузки всех игр
-  const fetchAllGames = async () => {
-    try {
-      const response = await fetch("/api/protected/games");
-      const result = await response.json();
-      if (result.success) {
-        setAllGames(result.games || []);
-      }
-    } catch (err) {
-      // silent
-    }
+  // Загрузка всех данных
+  const fetchAllData = async () => {
+    setLoading(true);
+    await Promise.all([fetchDisksData(), fetchDigitalData()]);
+    setLoading(false);
   };
 
-  // Загрузка всех данных
   useEffect(() => {
-    const loadAllData = async () => {
-      setLoading(true);
-      await Promise.all([fetchDisksData(), fetchDigitalData(), fetchAllGames()]);
-      setLoading(false);
-    };
-
-    loadAllData();
+    fetchAllData();
   }, []);
 
   // Обработчик обновления физических дисков
-  const handleUpdate = async (
-    diskId,
-    newPrice,
-    newStock,
-    usedPrice,
-    usedStock,
-    gameId,
-    platform
-  ) => {
+  const handleUpdate = async (diskId, condition, price, stock, gameId) => {
     try {
-      setIsSubmitting(true);
-      setError(null);
-
       const response = await fetch("/api/admin/keys", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          diskId: diskId || null,
+          diskId,
+          condition,
+          price,
+          stock,
           gameId,
-          platform: platform || undefined,
-          newPrice: newPrice !== undefined ? parseFloat(newPrice) : undefined,
-          newStock: newStock !== undefined ? parseInt(newStock) : undefined,
-          usedPrice:
-            usedPrice !== undefined ? parseFloat(usedPrice) : undefined,
-          usedStock: usedStock !== undefined ? parseInt(usedStock) : undefined,
         }),
       });
 
@@ -123,15 +87,20 @@ export default function AdminKeysPage() {
         await fetchDisksData();
         setModalData(null);
         setIsModalOpen(false);
-        setSuccess("Данные успешно сохранены");
       } else {
-        setError(result.error || "Ошибка при сохранении данных");
+        setError(result.error);
       }
     } catch (err) {
-      setError(err.message || "Произошла ошибка при сохранении данных");
-    } finally {
-      setIsSubmitting(false);
+      setError(err.message);
     }
+  };
+
+  // Функция валидации данных
+  const validateDigitalData = (data) => {
+    if (!data.gameId) return "Выберите игру";
+    if (!data.platform) return "Выберите платформу";
+    if (!data.price || data.price < 0) return "Укажите корректную цену";
+    return null;
   };
 
   // Улучшенный обработчик обновления цифровых копий
@@ -222,6 +191,7 @@ export default function AdminKeysPage() {
         setSuccess("Статус набора успешно обновлен");
       }
     } catch (error) {
+      console.error("Ошибка:", error);
       setError("Произошла ошибка при обновлении данных");
     } finally {
       setIsLoading(false);
@@ -284,43 +254,9 @@ export default function AdminKeysPage() {
     setIsDigitalModalOpen(true);
   };
 
-  const handleDiskDelete = async (diskId, gameId, platform) => {
-    if (
-      !window.confirm(
-        "Удалить физический диск и все его варианты для этой платформы?"
-      )
-    ) {
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      setError(null);
-
-      const response = await fetch("/api/admin/keys", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          diskId: diskId || undefined,
-          gameId: gameId || undefined,
-          platform: platform || undefined,
-        }),
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        await fetchDisksData();
-        setSuccess("Запись успешно удалена");
-      } else {
-        setError(result.error || "Ошибка при удалении");
-      }
-    } catch (err) {
-      setError(err.message || "Произошла ошибка при удалении");
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure?")) return;
+    // Логика удаления
   };
 
   if (loading) {
@@ -347,29 +283,15 @@ export default function AdminKeysPage() {
     <div className="container mx-auto px-4 py-8">
       {/* Секция физических дисков */}
       <section className="mb-12">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Управление физическими дисками</h2>
-          <button
-            onClick={() =>
-              openDiskModal({
-                type: "add",
-                modalTitle: "Добавить новый физический диск",
-              })
-            }
-            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors"
-          >
-            Добавить диск
-          </button>
-        </div>
+        <h2 className="text-2xl font-bold mb-6">
+          Управление физическими дисками
+        </h2>
         <div className="overflow-x-auto">
           <table className="min-w-full bg-white border border-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Игра
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Платформа
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Новые
@@ -383,19 +305,9 @@ export default function AdminKeysPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {disksData.map((item, index) => (
-                <tr
-                  key={`${item.gameId}-${
-                    item.platform || "no-platform"
-                  }-${index}`}
-                  className="hover:bg-gray-50"
-                >
+              {disksData.map((item) => (
+                <tr key={item.gameId} className="hover:bg-gray-50">
                   <td className="px-6 py-4">{item.gameTitle}</td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-medium">
-                      {item.platform || "Не указана"}
-                    </span>
-                  </td>
                   <td className="px-6 py-4">
                     <span className="text-sm">
                       {item.newStock} шт. × {item.newPrice}₸
@@ -406,14 +318,13 @@ export default function AdminKeysPage() {
                       {item.usedStock} шт. × {item.usedPrice}₸
                     </span>
                   </td>
-                  <td className="px-6 py-4 space-x-2">
+                  <td className="px-6 py-4">
                     <button
                       onClick={() =>
                         openDiskModal({
                           gameId: item.gameId,
                           diskId: item.diskId,
                           gameTitle: item.gameTitle,
-                          platform: item.platform,
                           newPrice: item.newPrice,
                           usedPrice: item.usedPrice,
                           newStock: item.newStock,
@@ -424,21 +335,6 @@ export default function AdminKeysPage() {
                     >
                       Редактировать
                     </button>
-                    {item.diskId && (
-                      <button
-                        onClick={() =>
-                          handleDiskDelete(
-                            item.diskId,
-                            item.gameId,
-                            item.platform
-                          )
-                        }
-                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm transition-colors"
-                        disabled={isSubmitting}
-                      >
-                        Удалить
-                      </button>
-                    )}
                   </td>
                 </tr>
               ))}
@@ -589,122 +485,30 @@ export default function AdminKeysPage() {
         {modalData && (
           <div className="p-6">
             <h3 className="text-xl font-bold mb-4">
-              {modalData.diskId
-                ? "Редактирование"
-                : modalData.type === "add"
-                ? "Добавление нового диска"
-                : "Добавление"}{" "}
-              {modalData.gameTitle ? `- ${modalData.gameTitle}` : ""}
+              {modalData.diskId ? "Редактирование" : "Добавление"} -{" "}
+              {modalData.gameTitle}
             </h3>
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-                <span className="block sm:inline">{error}</span>
-              </div>
-            )}
-            {success && (
-              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
-                <span className="block sm:inline">{success}</span>
-              </div>
-            )}
             <div className="space-y-4">
-              {!modalData.gameId && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Игра *
-                  </label>
-                  <select
-                    className="border p-2 rounded w-full"
-                    value={modalData.gameId || ""}
-                    onChange={(e) => {
-                      const selectedOption =
-                        e.target.options[e.target.selectedIndex];
-                      setModalData({
-                        ...modalData,
-                        gameId: selectedOption.value,
-                        gameTitle: selectedOption.text,
-                      });
-                    }}
-                    disabled={isSubmitting}
-                  >
-                    <option value="">Выберите игру...</option>
-                    {allGames.map((game) => (
-                      <option
-                        key={game._id || game.id}
-                        value={game._id || game.id}
-                      >
-                        {game.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Платформа *
-                </label>
-                <select
-                  className="border p-2 rounded w-full"
-                  value={modalData.platform || ""}
-                  onChange={(e) => {
-                    setModalData({
-                      ...modalData,
-                      platform: e.target.value,
-                    });
-                  }}
-                  disabled={isSubmitting || !!modalData.diskId}
-                >
-                  <option value="">Выберите платформу...</option>
-                  {PLATFORMS.map((platform) => (
-                    <option key={platform} value={platform}>
-                      {platform}
-                    </option>
-                  ))}
-                </select>
-                {modalData.diskId && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Платформу нельзя изменить для существующего диска
-                  </p>
-                )}
-              </div>
               <div>
                 <h4 className="font-medium mb-2">Новые диски</h4>
                 <div className="flex space-x-4">
                   <input
                     type="number"
-                    min="0"
                     placeholder="Количество"
-                    value={modalData.newStock ?? ""}
-                    onChange={(e) => {
-                      const value =
-                        e.target.value === ""
-                          ? ""
-                          : parseInt(e.target.value) || 0;
-                      setModalData({
-                        ...modalData,
-                        newStock: value,
-                      });
-                    }}
+                    defaultValue={modalData.newStock}
+                    onChange={(e) =>
+                      (modalData.newStock = parseInt(e.target.value))
+                    }
                     className="border p-2 rounded w-1/2"
-                    disabled={isSubmitting}
                   />
                   <input
                     type="number"
-                    min="0"
-                    step="0.01"
                     placeholder="Цена"
-                    value={modalData.newPrice ?? ""}
-                    onChange={(e) => {
-                      const value =
-                        e.target.value === ""
-                          ? ""
-                          : parseFloat(e.target.value) || 0;
-                      setModalData({
-                        ...modalData,
-                        newPrice: value,
-                      });
-                    }}
+                    defaultValue={modalData.newPrice}
+                    onChange={(e) =>
+                      (modalData.newPrice = parseFloat(e.target.value))
+                    }
                     className="border p-2 rounded w-1/2"
-                    disabled={isSubmitting}
                   />
                 </div>
               </div>
@@ -713,40 +517,21 @@ export default function AdminKeysPage() {
                 <div className="flex space-x-4">
                   <input
                     type="number"
-                    min="0"
                     placeholder="Количество"
-                    value={modalData.usedStock ?? ""}
-                    onChange={(e) => {
-                      const value =
-                        e.target.value === ""
-                          ? ""
-                          : parseInt(e.target.value) || 0;
-                      setModalData({
-                        ...modalData,
-                        usedStock: value,
-                      });
-                    }}
+                    defaultValue={modalData.usedStock}
+                    onChange={(e) =>
+                      (modalData.usedStock = parseInt(e.target.value))
+                    }
                     className="border p-2 rounded w-1/2"
-                    disabled={isSubmitting}
                   />
                   <input
                     type="number"
-                    min="0"
-                    step="0.01"
                     placeholder="Цена"
-                    value={modalData.usedPrice ?? ""}
-                    onChange={(e) => {
-                      const value =
-                        e.target.value === ""
-                          ? ""
-                          : parseFloat(e.target.value) || 0;
-                      setModalData({
-                        ...modalData,
-                        usedPrice: value,
-                      });
-                    }}
+                    defaultValue={modalData.usedPrice}
+                    onChange={(e) =>
+                      (modalData.usedPrice = parseFloat(e.target.value))
+                    }
                     className="border p-2 rounded w-1/2"
-                    disabled={isSubmitting}
                   />
                 </div>
               </div>
@@ -755,93 +540,31 @@ export default function AdminKeysPage() {
                   onClick={() => {
                     setModalData(null);
                     setIsModalOpen(false);
-                    setError(null);
-                    setSuccess(null);
                   }}
                   className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded transition-colors"
-                  disabled={isSubmitting}
                 >
                   Отмена
                 </button>
                 <button
                   onClick={() => {
-                    setError(null);
-                    setSuccess(null);
-
-                    // Нормализация и валидация данных
-                    const newPriceValue =
-                      modalData.newPrice === "" ||
-                      modalData.newPrice === undefined
-                        ? 0
-                        : parseFloat(modalData.newPrice);
-                    const newStockValue =
-                      modalData.newStock === "" ||
-                      modalData.newStock === undefined
-                        ? 0
-                        : parseInt(modalData.newStock);
-                    const usedPriceValue =
-                      modalData.usedPrice === "" ||
-                      modalData.usedPrice === undefined
-                        ? 0
-                        : parseFloat(modalData.usedPrice);
-                    const usedStockValue =
-                      modalData.usedStock === "" ||
-                      modalData.usedStock === undefined
-                        ? 0
-                        : parseInt(modalData.usedStock);
-
-                    // Валидация данных
-                    if (!modalData.diskId && !modalData.gameId) {
-                      setError("Выберите игру");
-                      return;
-                    }
-                    if (!modalData.diskId && !modalData.platform) {
-                      setError("Выберите платформу");
-                      return;
-                    }
-                    if (
-                      (newPriceValue !== undefined && isNaN(newPriceValue)) ||
-                      (usedPriceValue !== undefined && isNaN(usedPriceValue))
-                    ) {
-                      setError("Цена должна быть числом");
-                      return;
-                    }
-                    if (
-                      (newPriceValue !== undefined && newPriceValue < 0) ||
-                      (usedPriceValue !== undefined && usedPriceValue < 0)
-                    ) {
-                      setError("Цена не может быть отрицательной");
-                      return;
-                    }
-                    if (
-                      (newStockValue !== undefined && isNaN(newStockValue)) ||
-                      (usedStockValue !== undefined && isNaN(usedStockValue))
-                    ) {
-                      setError("Количество должно быть числом");
-                      return;
-                    }
-                    if (
-                      (newStockValue !== undefined && newStockValue < 0) ||
-                      (usedStockValue !== undefined && usedStockValue < 0)
-                    ) {
-                      setError("Количество не может быть отрицательным");
-                      return;
-                    }
-
                     handleUpdate(
                       modalData.diskId,
-                      newPriceValue,
-                      newStockValue,
-                      usedPriceValue,
-                      usedStockValue,
-                      modalData.gameId,
-                      modalData.platform
+                      "new",
+                      modalData.newPrice,
+                      modalData.newStock,
+                      modalData.gameId
+                    );
+                    handleUpdate(
+                      modalData.diskId,
+                      "used",
+                      modalData.usedPrice,
+                      modalData.usedStock,
+                      modalData.gameId
                     );
                   }}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
-                  disabled={isSubmitting}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors"
                 >
-                  {isSubmitting ? "Сохранение..." : "Сохранить"}
+                  Сохранить
                 </button>
               </div>
             </div>
