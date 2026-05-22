@@ -4,9 +4,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // compiler: {
-  //   removeConsole: process.env.NODE_ENV === "production",
-  // },
+  output: 'standalone',
   poweredByHeader: false,
 
   async redirects() {
