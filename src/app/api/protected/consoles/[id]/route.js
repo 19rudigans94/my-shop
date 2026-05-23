@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/shared/lib/db/mongodb";
 import Console from "@/entities/console/model/schema";
-import { generateSlug } from "@/shared/lib/slug";
+import { generateUniqueSlug } from "@/shared/lib/slug";
 
 // Получение конкретной консоли
 export async function GET(request, { params }) {
@@ -49,27 +49,8 @@ export async function PUT(request, { params }) {
     const { id } = params;
     const data = await request.json();
 
-    // Если изменилось название, обновляем слаг
     if (data.title) {
-      let slug = generateSlug(data.title);
-
-      // Проверяем, существует ли уже консоль с таким слагом (кроме текущей)
-      let existingConsole = await Console.findOne({
-        slug,
-        _id: { $ne: id },
-      });
-
-      let counter = 1;
-      while (existingConsole) {
-        slug = `${generateSlug(data.title)}-${counter}`;
-        existingConsole = await Console.findOne({
-          slug,
-          _id: { $ne: id },
-        });
-        counter++;
-      }
-
-      data.slug = slug;
+      data.slug = await generateUniqueSlug(data.title, Console, id);
     }
 
     // Проверяем и преобразуем числовые поля

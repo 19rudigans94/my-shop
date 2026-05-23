@@ -1,48 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import GameCard from "@/entities/game/ui";
+import LoadingSpinner from "@/shared/ui/loading-spinner";
+import ErrorDisplay from "@/shared/ui/error-display";
+import { useFetchItems } from "@/shared/lib/hooks/use-fetch-items";
 
 export default function GamesPage() {
   const router = useRouter();
-  const [games, setGames] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { items: games, loading, error } = useFetchItems("/api/games", "games");
 
-  useEffect(() => {
-    const fetchGames = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch("/api/games");
-        const data = await response.json();
-        if (!response.ok || !data.success) throw new Error(data.error || "Ошибка загрузки игр");
-        setGames(data.games);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGames();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900 dark:border-white"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-red-500">Ошибка: {error}</div>
-      </div>
-    );
-  }
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorDisplay error={error} />;
 
   return (
     <div className="container mx-auto px-4 py-8">

@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AccessoryCard from "@/entities/accessory/ui";
+import LoadingSpinner from "@/shared/ui/loading-spinner";
+import ErrorDisplay from "@/shared/ui/error-display";
 
 export default function AccessoriesPage() {
   const router = useRouter();
@@ -53,21 +55,8 @@ export default function AccessoriesPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900 dark:border-white"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-red-500">Ошибка: {error}</div>
-      </div>
-    );
-  }
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorDisplay error={error} />;
 
   return (
     <div className="container mx-auto px-4 py-8">

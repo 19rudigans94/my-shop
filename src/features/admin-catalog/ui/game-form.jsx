@@ -41,10 +41,6 @@ export default function GameForm({ game, onSubmit, onCancel }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Добавляем валидацию и логирование
-    console.log("Отправка формы:", formData);
-
-    // Проверяем все обязательные поля
     const requiredFields = {
       title: "Название",
       description: "Описание",
@@ -79,7 +75,6 @@ export default function GameForm({ game, onSubmit, onCancel }) {
         youtubeUrl: embedUrl,
       };
 
-      console.log("Отправляем данные:", submitData);
       onSubmit(submitData);
     } catch (error) {
       console.error("Ошибка при обработке формы:", error);

@@ -5,6 +5,9 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import PriceList from "@/widgets/game-price-list/ui/price-list";
 import VideoPlayer from "@/shared/ui/video-player";
+import LoadingSpinner from "@/shared/ui/loading-spinner";
+import ErrorDisplay from "@/shared/ui/error-display";
+
 export default function GameDetailsPage() {
   const params = useParams();
   const [game, setGame] = useState(null);
@@ -71,21 +74,8 @@ export default function GameDetailsPage() {
     fetchGame();
   }, [params.slug]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900 dark:border-white"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-red-500">Ошибка: {error}</div>
-      </div>
-    );
-  }
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorDisplay error={error} />;
 
   if (!game) {
     return (

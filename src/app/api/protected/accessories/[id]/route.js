@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/shared/lib/db/mongodb";
 import Accessory from "@/entities/accessory/model/schema";
-import { generateSlug } from "@/shared/lib/slug";
+import { generateUniqueSlug } from "@/shared/lib/slug";
 
 // Получение конкретного аксессуара
 export async function GET(request, { params }) {
@@ -49,27 +49,8 @@ export async function PUT(request, { params }) {
     const { id } = params;
     const data = await request.json();
 
-    // Если изменилось название, обновляем слаг
     if (data.title) {
-      let slug = generateSlug(data.title);
-
-      // Проверяем, существует ли уже аксессуар с таким слагом (кроме текущего)
-      let existingAccessory = await Accessory.findOne({
-        slug,
-        _id: { $ne: id },
-      });
-
-      let counter = 1;
-      while (existingAccessory) {
-        slug = `${generateSlug(data.title)}-${counter}`;
-        existingAccessory = await Accessory.findOne({
-          slug,
-          _id: { $ne: id },
-        });
-        counter++;
-      }
-
-      data.slug = slug;
+      data.slug = await generateUniqueSlug(data.title, Accessory, id);
     }
 
     // Преобразуем stock в число, если оно передано как строка

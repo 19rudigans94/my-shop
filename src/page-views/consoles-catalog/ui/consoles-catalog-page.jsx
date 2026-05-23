@@ -1,48 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ConsoleCard from "@/entities/console/ui";
+import LoadingSpinner from "@/shared/ui/loading-spinner";
+import ErrorDisplay from "@/shared/ui/error-display";
+import { useFetchItems } from "@/shared/lib/hooks/use-fetch-items";
 
 export default function ConsolePage() {
   const router = useRouter();
-  const [consoles, setConsoles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { items: consoles, loading, error } = useFetchItems("/api/consoles", "consoles");
 
-  useEffect(() => {
-    const fetchConsoles = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch("/api/consoles");
-        const data = await response.json();
-        if (!response.ok || !data.success) throw new Error(data.error || "Ошибка загрузки консолей");
-        setConsoles(data.consoles);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchConsoles();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900 dark:border-white"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-red-500">Ошибка: {error}</div>
-      </div>
-    );
-  }
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorDisplay error={error} />;
 
   return (
     <div className="container mx-auto px-4 py-8">

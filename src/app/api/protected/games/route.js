@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/shared/lib/db/mongodb";
 import Game from "@/entities/game/model/schema";
 import PhysicalDisk from "@/entities/game/model/physical-disk-schema";
-import { generateSlug } from "@/shared/lib/slug";
+import { generateUniqueSlug } from "@/shared/lib/slug";
 
 // Получение списка игр
 export async function GET() {
@@ -60,22 +60,7 @@ export async function POST(request) {
       throw new Error("Количество на складе не может быть отрицательным");
     }
 
-    // Генерируем слаг из названия
-    let slug = generateSlug(data.title);
-
-    // Проверяем, существует ли уже игра с таким слагом
-    let existingGame = await Game.findOne({ slug });
-    let counter = 1;
-
-    // Если слаг уже существует, добавляем к нему число
-    while (existingGame) {
-      slug = `${generateSlug(data.title)}-${counter}`;
-      existingGame = await Game.findOne({ slug });
-      counter++;
-    }
-
-    // Добавляем слаг в данные
-    data.slug = slug;
+    data.slug = await generateUniqueSlug(data.title, Game);
 
     // Создаем игру
     const game = await Game.create(data);

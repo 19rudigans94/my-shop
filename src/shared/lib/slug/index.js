@@ -75,8 +75,20 @@ export function generateSlug(title) {
     .join("")
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, "") // Удаляем все символы кроме букв, цифр, пробелов и дефисов
-    .replace(/\s+/g, "-") // Заменяем пробелы на дефисы
-    .replace(/-+/g, "-") // Заменяем множественные дефисы на один
-    .replace(/^-+|-+$/g, ""); // Удаляем дефисы в начале и конце
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export async function generateUniqueSlug(title, Model, excludeId = null) {
+  let slug = generateSlug(title);
+  let counter = 1;
+  while (true) {
+    const query = excludeId ? { slug, _id: { $ne: excludeId } } : { slug };
+    const existing = await Model.findOne(query);
+    if (!existing) break;
+    slug = `${generateSlug(title)}-${counter++}`;
+  }
+  return slug;
 }

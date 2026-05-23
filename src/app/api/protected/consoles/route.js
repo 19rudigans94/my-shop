@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/shared/lib/db/mongodb";
 import Console from "@/entities/console/model/schema";
-import { generateSlug } from "@/shared/lib/slug";
+import { generateUniqueSlug } from "@/shared/lib/slug";
 
 // Получение списка консолей
 export async function GET() {
@@ -65,22 +65,7 @@ export async function POST(request) {
       throw new Error("Количество на складе не может быть отрицательным");
     }
 
-    // Генерируем слаг из названия
-    let slug = generateSlug(data.title);
-
-    // Проверяем, существует ли уже консоль с таким слагом
-    let existingConsole = await Console.findOne({ slug });
-    let counter = 1;
-
-    // Если слаг уже существует, добавляем к нему число
-    while (existingConsole) {
-      slug = `${generateSlug(data.title)}-${counter}`;
-      existingConsole = await Console.findOne({ slug });
-      counter++;
-    }
-
-    // Добавляем слаг в данные
-    data.slug = slug;
+    data.slug = await generateUniqueSlug(data.title, Console);
 
     const console = await Console.create(data);
 

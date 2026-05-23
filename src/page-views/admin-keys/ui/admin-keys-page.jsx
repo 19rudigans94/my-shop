@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Modal from "@/shared/ui/modal";
+import LoadingSpinner from "@/shared/ui/loading-spinner";
+import ErrorDisplay from "@/shared/ui/error-display";
 
 export default function AdminKeysPage() {
   const [disksData, setDisksData] = useState([]);
@@ -14,7 +16,6 @@ export default function AdminKeysPage() {
   const [isDigitalModalOpen, setIsDigitalModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedDigitalId, setSelectedDigitalId] = useState(null);
   const [credentialModalData, setCredentialModalData] = useState({
     login: "",
     password: "",
@@ -44,7 +45,6 @@ export default function AdminKeysPage() {
       const result = await response.json();
       if (result.success) {
         // Данные теперь структурированы по-другому - наборы копий с учетными данными внутри
-        console.log(result.data, "result.data");
         setDigitalData(result.data);
       } else {
         setError(result.error);
@@ -254,30 +254,9 @@ export default function AdminKeysPage() {
     setIsDigitalModalOpen(true);
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm("Are you sure?")) return;
-    // Логика удаления
-  };
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorDisplay error={error} inline />;
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div
-        className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
-        role="alert"
-      >
-        <strong className="font-bold">Ошибка!</strong>
-        <span className="block sm:inline"> {error}</span>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto px-4 py-8">

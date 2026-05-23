@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/shared/lib/db/mongodb";
 import Accessory from "@/entities/accessory/model/schema";
-import { generateSlug } from "@/shared/lib/slug";
+import { generateUniqueSlug } from "@/shared/lib/slug";
 
 // Получение списка аксессуаров
 export async function GET() {
@@ -56,22 +56,7 @@ export async function POST(request) {
       data.stock = parseInt(data.stock, 10);
     }
 
-    // Генерируем слаг из названия
-    let slug = generateSlug(data.title);
-
-    // Проверяем, существует ли уже аксессуар с таким слагом
-    let existingAccessory = await Accessory.findOne({ slug });
-    let counter = 1;
-
-    // Если слаг уже существует, добавляем к нему число
-    while (existingAccessory) {
-      slug = `${generateSlug(data.title)}-${counter}`;
-      existingAccessory = await Accessory.findOne({ slug });
-      counter++;
-    }
-
-    // Добавляем слаг в данные
-    data.slug = slug;
+    data.slug = await generateUniqueSlug(data.title, Accessory);
 
     const accessory = await Accessory.create(data);
 
