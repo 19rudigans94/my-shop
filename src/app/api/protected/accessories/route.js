@@ -3,6 +3,8 @@ import connectDB from "@/shared/lib/db/mongodb";
 import Accessory from "@/entities/accessory/model/schema";
 import { generateUniqueSlug } from "@/shared/lib/slug";
 
+export const dynamic = 'force-dynamic';
+
 // Получение списка аксессуаров
 export async function GET() {
   try {

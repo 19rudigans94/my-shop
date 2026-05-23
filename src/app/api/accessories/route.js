@@ -3,6 +3,8 @@ import connectDB from "@/shared/lib/db/mongodb";
 import Accessory from "@/entities/accessory/model/schema";
 import { generateSlug } from "@/shared/lib/slug";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
   try {
     const connection = await connectDB();

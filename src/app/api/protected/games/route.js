@@ -4,6 +4,8 @@ import Game from "@/entities/game/model/schema";
 import PhysicalDisk from "@/entities/game/model/physical-disk-schema";
 import { generateUniqueSlug } from "@/shared/lib/slug";
 
+export const dynamic = 'force-dynamic';
+
 // Получение списка игр
 export async function GET() {
   try {

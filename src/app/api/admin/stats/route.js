@@ -3,6 +3,8 @@ import connectDB from "@/shared/lib/db/mongodb";
 import Game from "@/entities/game/model/schema";
 import Console from "@/entities/console/model/schema";
 import Accessory from "@/entities/accessory/model/schema";
+
+export const dynamic = 'force-dynamic';
 import Order from "@/entities/order/model/schema";
 
 export async function GET() {

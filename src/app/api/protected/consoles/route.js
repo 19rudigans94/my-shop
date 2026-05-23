@@ -3,6 +3,8 @@ import connectDB from "@/shared/lib/db/mongodb";
 import Console from "@/entities/console/model/schema";
 import { generateUniqueSlug } from "@/shared/lib/slug";
 
+export const dynamic = 'force-dynamic';
+
 // Получение списка консолей
 export async function GET() {
   try {

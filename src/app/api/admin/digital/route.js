@@ -1,6 +1,8 @@
 import connectDB from "@/shared/lib/db/mongodb";
 import { ObjectId } from "mongodb";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const mongoose = await connectDB();
