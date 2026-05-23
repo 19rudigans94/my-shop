@@ -42,7 +42,7 @@ export default function GameDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900" suppressHydrationWarning>
-      <ProductHero image={game.image} title={game.title} badges={game.platforms} />
+      <ProductHero images={game.images || []} title={game.title} badges={game.platforms} />
 
       <Breadcrumbs items={breadcrumbs} />
 

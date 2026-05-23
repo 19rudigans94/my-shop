@@ -44,7 +44,7 @@ export default function ConsoleDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900" suppressHydrationWarning>
-      <ProductHero image={consoleItem.image} title={consoleItem.title} badges={badges} />
+      <ProductHero images={consoleItem.images || []} title={consoleItem.title} badges={badges} />
 
       <Breadcrumbs items={breadcrumbs} />
 

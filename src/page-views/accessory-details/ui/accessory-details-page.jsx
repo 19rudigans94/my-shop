@@ -42,7 +42,7 @@ export default function AccessoryDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900" suppressHydrationWarning>
-      <ProductHero image={accessory.image} title={accessory.title} badges={[accessory.platform]} />
+      <ProductHero images={accessory.images || []} title={accessory.title} badges={[accessory.platform]} />
 
       <Breadcrumbs items={breadcrumbs} />
 

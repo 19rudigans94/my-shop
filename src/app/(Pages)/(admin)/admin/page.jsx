@@ -1,5 +1,1 @@
-import { redirect } from "next/navigation";
-
-export default function Home() {
-  redirect("/admin/games");
-}
+export { default } from "@/page-views/admin-dashboard/ui/admin-dashboard-page";

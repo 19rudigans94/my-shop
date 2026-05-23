@@ -40,7 +40,7 @@ export async function POST(request) {
     const data = await request.json();
 
     // Проверяем обязательные поля
-    if (!data.title || !data.platforms || !data.description || !data.image) {
+    if (!data.title || !data.platforms || !data.description || !data.images?.length) {
       throw new Error("Не все обязательные поля заполнены");
     }
 

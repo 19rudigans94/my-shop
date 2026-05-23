@@ -2,49 +2,29 @@ import { NextResponse } from "next/server";
 import connectDB from "@/shared/lib/db/mongodb";
 import Console from "@/entities/console/model/schema";
 import { generateUniqueSlug } from "@/shared/lib/slug";
+import { deleteImagesFromS3 } from "@/shared/lib/storage/s3";
 
-// Получение конкретной консоли
 export async function GET(request, { params }) {
   try {
     const connection = await connectDB();
-    if (!connection) {
-      throw new Error("Ошибка подключения к базе данных");
-    }
+    if (!connection) throw new Error("Ошибка подключения к базе данных");
 
     const console = await Console.findById(params.id);
     if (!console) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Консоль не найдена",
-        },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: "Консоль не найдена" }, { status: 404 });
     }
 
-    return NextResponse.json({
-      success: true,
-      console,
-    });
+    return NextResponse.json({ success: true, console });
   } catch (error) {
     console.error("Ошибка при получении консоли:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message || "Ошибка при получении консоли",
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message || "Ошибка при получении консоли" }, { status: 500 });
   }
 }
 
-// Обновление консоли
 export async function PUT(request, { params }) {
   try {
     const connection = await connectDB();
-    if (!connection) {
-      throw new Error("Ошибка подключения к базе данных");
-    }
+    if (!connection) throw new Error("Ошибка подключения к базе данных");
 
     const { id } = params;
     const data = await request.json();
@@ -53,85 +33,47 @@ export async function PUT(request, { params }) {
       data.slug = await generateUniqueSlug(data.title, Console, id);
     }
 
-    // Проверяем и преобразуем числовые поля
-    if (typeof data.price === "string") {
-      data.price = parseFloat(data.price);
-    }
-    if (typeof data.stock === "string") {
-      data.stock = parseInt(data.stock, 10);
+    if (typeof data.price === "string") data.price = parseFloat(data.price);
+    if (typeof data.stock === "string") data.stock = parseInt(data.stock, 10);
+
+    if (data.price !== undefined && data.price < 0) throw new Error("Цена не может быть отрицательной");
+    if (data.stock !== undefined && data.stock < 0) throw new Error("Количество на складе не может быть отрицательным");
+
+    if (data.images) {
+      const existing = await Console.findById(id).select("images");
+      if (existing) {
+        const removed = (existing.images || []).filter((url) => !data.images.includes(url));
+        await deleteImagesFromS3(removed);
+      }
     }
 
-    // Проверяем на отрицательные значения
-    if (data.price !== undefined && data.price < 0) {
-      throw new Error("Цена не может быть отрицательной");
-    }
-    if (data.stock !== undefined && data.stock < 0) {
-      throw new Error("Количество на складе не может быть отрицательным");
-    }
-
-    const console = await Console.findByIdAndUpdate(
-      id,
-      { $set: data },
-      { new: true, runValidators: true }
-    );
-
+    const console = await Console.findByIdAndUpdate(id, { $set: data }, { new: true, runValidators: true });
     if (!console) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Консоль не найдена",
-        },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: "Консоль не найдена" }, { status: 404 });
     }
 
-    return NextResponse.json({
-      success: true,
-      console,
-    });
+    return NextResponse.json({ success: true, console });
   } catch (error) {
     console.error("Ошибка при обновлении консоли:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message || "Ошибка при обновлении консоли",
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message || "Ошибка при обновлении консоли" }, { status: 500 });
   }
 }
 
-// Удаление консоли
 export async function DELETE(request, { params }) {
   try {
     const connection = await connectDB();
-    if (!connection) {
-      throw new Error("Ошибка подключения к базе данных");
-    }
+    if (!connection) throw new Error("Ошибка подключения к базе данных");
 
     const console = await Console.findByIdAndDelete(params.id);
     if (!console) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Консоль не найдена",
-        },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: "Консоль не найдена" }, { status: 404 });
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Консоль успешно удалена",
-    });
+    await deleteImagesFromS3(console.images);
+
+    return NextResponse.json({ success: true, message: "Консоль успешно удалена" });
   } catch (error) {
     console.error("Ошибка при удалении консоли:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message || "Ошибка при удалении консоли",
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message || "Ошибка при удалении консоли" }, { status: 500 });
   }
 }

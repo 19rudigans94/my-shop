@@ -73,7 +73,7 @@ export async function POST(request) {
       !data.platform ||
       !data.price ||
       !data.description ||
-      !data.image ||
+      !data.images?.length ||
       typeof data.stock === "undefined"
     ) {
       throw new Error("Не все обязательные поля заполнены");

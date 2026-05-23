@@ -44,7 +44,7 @@ export async function POST(request) {
       typeof data.state === "undefined" ||
       !data.price ||
       !data.description ||
-      !data.image
+      !data.images?.length
     ) {
       throw new Error("Не все обязательные поля заполнены");
     }

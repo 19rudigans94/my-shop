@@ -12,7 +12,7 @@ export default function GameCard({ game, onClick }) {
     >
       <div className="aspect-video bg-gray-200 dark:bg-gray-700 relative">
         <Image
-          src={game.image}
+          src={game.images?.[0] || "/images/placeholder.svg"}
           alt={game.title}
           placeholder="blur"
           blurDataURL={blurDataURL}

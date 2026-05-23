@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useToast } from "@/shared/ui/toast";
+import ImageUploader from "@/shared/ui/image-uploader";
 
 const PLATFORMS = [
   "PS5",
@@ -13,101 +15,74 @@ const PLATFORMS = [
 ];
 
 export default function GameForm({ game, onSubmit, onCancel }) {
+  const { toast } = useToast();
+  const uploaderRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    platforms: [],
-    image: "",
-    youtubeUrl: "",
-    features: [],
-    genre: [],
+    title: game?.title || "",
+    description: game?.description || "",
+    platforms: game?.platforms || [],
+    images: game?.images || [],
+    youtubeUrl: game?.youtubeUrl || "",
+    features: game?.features || [],
+    genre: Array.isArray(game?.genre) ? game.genre : [],
   });
 
   useEffect(() => {
     if (game) {
-      const newState = {
+      setFormData({
         title: game.title || "",
         description: game.description || "",
         platforms: game.platforms || [],
-        image: game.image || "",
+        images: game.images || [],
         youtubeUrl: game.youtubeUrl || "",
         features: game.features || [],
         genre: Array.isArray(game.genre) ? game.genre : [],
-      };
-      setFormData(newState);
+      });
     }
   }, [game]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const requiredFields = {
-      title: "Название",
-      description: "Описание",
-      image: "URL изображения",
-      youtubeUrl: "URL YouTube видео",
-    };
-
-    const emptyFields = Object.entries(requiredFields)
-      .filter(([key]) => !formData[key])
-      .map(([_, label]) => label);
-
-    if (emptyFields.length > 0) {
-      alert(`Пожалуйста, заполните следующие поля: ${emptyFields.join(", ")}`);
+    if (!formData.title || !formData.description) {
+      toast.error("Заполните обязательные поля: Название, Описание");
       return;
     }
 
-    // Конвертируем YouTube URL в формат для встраивания
-    const youtubeUrl = formData.youtubeUrl;
-    let embedUrl = youtubeUrl;
-
     try {
-      if (youtubeUrl.includes("youtube.com/watch?v=")) {
+      setUploading(true);
+      const uploadedImages = await uploaderRef.current.uploadPending();
+
+      if (uploadedImages.length === 0) {
+        toast.error("Добавьте хотя бы одно изображение");
+        return;
+      }
+
+      const youtubeUrl = formData.youtubeUrl;
+      let embedUrl = youtubeUrl;
+      if (youtubeUrl?.includes("youtube.com/watch?v=")) {
         const videoId = youtubeUrl.split("v=")[1].split("&")[0];
         embedUrl = `https://www.youtube.com/embed/${videoId}`;
-      } else if (youtubeUrl.includes("youtu.be/")) {
+      } else if (youtubeUrl?.includes("youtu.be/")) {
         const videoId = youtubeUrl.split("youtu.be/")[1];
         embedUrl = `https://www.youtube.com/embed/${videoId}`;
       }
 
-      const submitData = {
-        ...formData,
-        youtubeUrl: embedUrl,
-      };
-
-      onSubmit(submitData);
-    } catch (error) {
-      console.error("Ошибка при обработке формы:", error);
-      alert(
-        "Произошла ошибка при обработке формы. Проверьте правильность заполнения полей."
-      );
+      onSubmit({ ...formData, images: uploadedImages, youtubeUrl: embedUrl });
+    } catch (err) {
+      toast.error(err.message || "Ошибка при загрузке изображений");
+    } finally {
+      setUploading(false);
     }
   };
 
-  const handleFeatureAdd = () => {
-    setFormData((prev) => ({
-      ...prev,
-      features: [...prev.features, ""],
-    }));
-  };
-
-  const handleFeatureChange = (index, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      features: prev.features.map((feature, i) =>
-        i === index ? value : feature
-      ),
-    }));
-  };
-
   const handleGenreAdd = () => {
-    setFormData((prev) => {
-      const newState = {
-        ...prev,
-        genre: Array.isArray(prev.genre) ? [...prev.genre, ""] : [""],
-      };
-      return newState;
-    });
+    setFormData((prev) => ({
+      ...prev,
+      genre: Array.isArray(prev.genre) ? [...prev.genre, ""] : [""],
+    }));
   };
 
   const handleGenreChange = (index, value) => {
@@ -119,15 +94,12 @@ export default function GameForm({ game, onSubmit, onCancel }) {
   };
 
   const handleGenreRemove = (index) => {
-    setFormData((prev) => {
-      const newState = {
-        ...prev,
-        genre: Array.isArray(prev.genre)
-          ? prev.genre.filter((_, i) => i !== index)
-          : [],
-      };
-      return newState;
-    });
+    setFormData((prev) => ({
+      ...prev,
+      genre: Array.isArray(prev.genre)
+        ? prev.genre.filter((_, i) => i !== index)
+        : [],
+    }));
   };
 
   const togglePlatform = (platform) => {
@@ -152,22 +124,7 @@ export default function GameForm({ game, onSubmit, onCancel }) {
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, title: e.target.value }))
             }
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            URL изображения
-          </label>
-          <input
-            type="url"
-            value={formData.image}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, image: e.target.value }))
-            }
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white"
             required
           />
         </div>
@@ -182,8 +139,7 @@ export default function GameForm({ game, onSubmit, onCancel }) {
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, youtubeUrl: e.target.value }))
             }
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
-            required
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white"
           />
         </div>
       </div>
@@ -207,7 +163,7 @@ export default function GameForm({ game, onSubmit, onCancel }) {
               <span
                 className={`px-3 py-1 rounded-full ${
                   formData.platforms.includes(platform)
-                    ? "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
+                    ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
                     : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
                 }`}
               >
@@ -228,7 +184,7 @@ export default function GameForm({ game, onSubmit, onCancel }) {
             setFormData((prev) => ({ ...prev, description: e.target.value }))
           }
           rows={4}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white"
           required
         />
       </div>
@@ -253,7 +209,7 @@ export default function GameForm({ game, onSubmit, onCancel }) {
                 type="text"
                 value={genre}
                 onChange={(e) => handleGenreChange(index, e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Введите жанр"
               />
               <button
@@ -268,6 +224,17 @@ export default function GameForm({ game, onSubmit, onCancel }) {
         </div>
       </div>
 
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Изображения
+        </label>
+        <ImageUploader
+          ref={uploaderRef}
+          images={formData.images}
+          uploadType="games"
+        />
+      </div>
+
       <div className="flex justify-end space-x-3">
         <button
           type="button"
@@ -278,9 +245,10 @@ export default function GameForm({ game, onSubmit, onCancel }) {
         </button>
         <button
           type="submit"
-          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+          disabled={uploading}
+          className="px-4 py-2 bg-yellow-500 text-gray-900 font-medium rounded-lg hover:bg-yellow-600 transition-colors disabled:opacity-60"
         >
-          {game ? "Сохранить изменения" : "Создать игру"}
+          {uploading ? "Загрузка..." : game ? "Сохранить изменения" : "Создать игру"}
         </button>
       </div>
     </form>

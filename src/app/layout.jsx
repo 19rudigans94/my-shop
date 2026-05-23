@@ -1,7 +1,7 @@
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/shared/ui/theme-provider";
-import { Header } from "@/widgets/header/ui/header";
+import ConditionalLayout from "./conditional-layout";
 
 const jetBrainsMono = JetBrains_Mono({
   subsets: ["latin", "cyrillic"],
@@ -22,8 +22,7 @@ export default function RootLayout({ children }) {
       <body className={`${jetBrainsMono.className} antialiased`}>
         <ThemeProvider>
           <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors">
-            <Header />
-            <main className="container mx-auto px-4 pt-8 pb-24 lg:pb-8">{children}</main>
+            <ConditionalLayout>{children}</ConditionalLayout>
           </div>
         </ThemeProvider>
       </body>

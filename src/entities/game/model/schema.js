@@ -17,9 +17,9 @@ const gameSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
-  image: {
-    type: String,
-    required: true,
+  images: {
+    type: [String],
+    default: [],
   },
   slug: {
     type: String,

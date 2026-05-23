@@ -3,27 +3,23 @@
 import { useState, useEffect } from "react";
 import Modal from "@/shared/ui/modal";
 import LoadingSpinner from "@/shared/ui/loading-spinner";
-import ErrorDisplay from "@/shared/ui/error-display";
+import ConfirmDialog from "@/shared/ui/confirm-dialog";
+import { useToast } from "@/shared/ui/toast";
 
 export default function AdminKeysPage() {
   const [disksData, setDisksData] = useState([]);
   const [digitalData, setDigitalData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [modalData, setModalData] = useState(null);
   const [digitalModalData, setDigitalModalData] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDigitalModalOpen, setIsDigitalModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [credentialModalData, setCredentialModalData] = useState({
-    login: "",
-    password: "",
-  });
-  const [showCredentialModal, setShowCredentialModal] = useState(false);
-  const [success, setSuccess] = useState(null);
+  const [credentialModalData, setCredentialModalData] = useState({ login: "", password: "" });
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, message: "", onConfirm: null });
+  const { toast } = useToast();
 
-  // Функция загрузки данных о физических дисках
   const fetchDisksData = async () => {
     try {
       const response = await fetch("/api/admin/keys");
@@ -31,30 +27,27 @@ export default function AdminKeysPage() {
       if (result.success) {
         setDisksData(result.data);
       } else {
-        setError(result.error);
+        toast.error(result.error || "Ошибка загрузки дисков");
       }
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message);
     }
   };
 
-  // Функция загрузки данных о цифровых копиях
   const fetchDigitalData = async () => {
     try {
       const response = await fetch("/api/admin/digital");
       const result = await response.json();
       if (result.success) {
-        // Данные теперь структурированы по-другому - наборы копий с учетными данными внутри
         setDigitalData(result.data);
       } else {
-        setError(result.error);
+        toast.error(result.error || "Ошибка загрузки цифровых копий");
       }
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message);
     }
   };
 
-  // Загрузка всех данных
   const fetchAllData = async () => {
     setLoading(true);
     await Promise.all([fetchDisksData(), fetchDigitalData()]);
@@ -65,56 +58,35 @@ export default function AdminKeysPage() {
     fetchAllData();
   }, []);
 
-  // Обработчик обновления физических дисков
   const handleUpdate = async (diskId, condition, price, stock, gameId) => {
     try {
       const response = await fetch("/api/admin/keys", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          diskId,
-          condition,
-          price,
-          stock,
-          gameId,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ diskId, condition, price, stock, gameId }),
       });
-
       const result = await response.json();
       if (result.success) {
         await fetchDisksData();
         setModalData(null);
         setIsModalOpen(false);
+        toast.success("Данные диска обновлены");
       } else {
-        setError(result.error);
+        toast.error(result.error || "Ошибка обновления");
       }
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message);
     }
   };
 
-  // Функция валидации данных
-  const validateDigitalData = (data) => {
-    if (!data.gameId) return "Выберите игру";
-    if (!data.platform) return "Выберите платформу";
-    if (!data.price || data.price < 0) return "Укажите корректную цену";
-    return null;
-  };
-
-  // Улучшенный обработчик обновления цифровых копий
   const handleDigitalUpdate = async (type, data) => {
     try {
       setIsLoading(true);
-      setError(null);
 
       if (type === "add_credential") {
         const response = await fetch("/api/admin/digital", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             operation: "add_credential",
             setId: digitalModalData.setId,
@@ -124,27 +96,22 @@ export default function AdminKeysPage() {
             },
           }),
         });
-
         const result = await response.json();
-
         if (!result.success) {
-          setError(result.error || "Ошибка при добавлении учетных данных");
+          toast.error(result.error || "Ошибка добавления учётных данных");
           return;
         }
-
         await fetchDigitalData();
         setCredentialModalData({ login: "", password: "" });
         setDigitalModalData(null);
         setIsDigitalModalOpen(false);
-        setSuccess("Учетные данные успешно добавлены");
+        toast.success("Учётные данные добавлены");
       }
 
       if (type === "create_set") {
         const response = await fetch("/api/admin/digital", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             operation: "create_set",
             gameId: digitalModalData.gameId,
@@ -153,595 +120,465 @@ export default function AdminKeysPage() {
             credential: digitalModalData.credential,
           }),
         });
-
         const result = await response.json();
-
         if (!result.success) {
-          setError(result.error || "Ошибка при создании набора");
+          toast.error(result.error || "Ошибка создания набора");
           return;
         }
-
         await fetchDigitalData();
         setDigitalModalData(null);
         setIsDigitalModalOpen(false);
-        setSuccess("Набор цифровых копий успешно создан");
+        toast.success("Набор цифровых копий создан");
       }
 
       if (type === "update_set") {
         const response = await fetch("/api/admin/digital", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             operation: "update_set",
             setId: data.setId,
             isActive: data.isActive,
           }),
         });
-
         const result = await response.json();
-
         if (!result.success) {
-          setError(result.error || "Ошибка при обновлении набора");
+          toast.error(result.error || "Ошибка обновления набора");
           return;
         }
-
         await fetchDigitalData();
-        setSuccess("Статус набора успешно обновлен");
+        toast.success("Статус набора обновлён");
       }
     } catch (error) {
-      console.error("Ошибка:", error);
-      setError("Произошла ошибка при обновлении данных");
+      toast.error("Произошла ошибка при обновлении");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Обработчик удаления набора цифровых копий или отдельных учетных данных
-  const handleDigitalDelete = async (operation, data) => {
-    const confirmMessage =
+  const handleDigitalDelete = (operation, data) => {
+    const message =
       operation === "delete_set"
-        ? "Вы уверены, что хотите удалить этот набор цифровых копий? Это действие удалит все учетные данные в наборе."
-        : "Вы уверены, что хотите удалить эти учетные данные?";
+        ? "Удалить набор цифровых копий? Все учётные данные в наборе будут удалены."
+        : "Удалить эти учётные данные?";
 
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
-
-    try {
-      const payload = { operation, ...data };
-
-      const response = await fetch("/api/admin/digital", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        await fetchDigitalData();
-      } else {
-        setError(result.error);
-        alert(`Ошибка: ${result.error}`);
-      }
-    } catch (err) {
-      setError(err.message);
-      alert(`Ошибка: ${err.message}`);
-    }
+    setConfirmDialog({
+      isOpen: true,
+      message,
+      onConfirm: async () => {
+        try {
+          const payload = { operation, ...data };
+          const response = await fetch("/api/admin/digital", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const result = await response.json();
+          if (result.success) {
+            await fetchDigitalData();
+            toast.success("Удалено успешно");
+          } else {
+            toast.error(result.error || "Ошибка при удалении");
+          }
+        } catch (err) {
+          toast.error(err.message);
+        }
+      },
+    });
   };
 
-  // Обработчик открытия модального окна для физических дисков
   const openDiskModal = (data) => {
     setModalData(data);
     setIsModalOpen(true);
   };
 
-  // Обработчик открытия модального окна для цифровых копий
   const openDigitalModal = (data) => {
-    // Добавляем дополнительную информацию о типе операции если нужно
     if (data.type === "add_set") {
       data.modalTitle = "Добавить новый набор цифровых копий";
     } else if (data.type === "add_credential") {
-      data.modalTitle = "Добавить учетные данные в набор";
+      data.modalTitle = "Добавить учётные данные";
     } else if (data.type === "update_set") {
-      data.modalTitle = "Редактировать набор цифровых копий";
+      data.modalTitle = "Редактировать набор";
     }
-
     setDigitalModalData(data);
     setIsDigitalModalOpen(true);
   };
 
   if (loading) return <LoadingSpinner />;
-  if (error) return <ErrorDisplay error={error} inline />;
-
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Секция физических дисков */}
-      <section className="mb-12">
-        <h2 className="text-2xl font-bold mb-6">
-          Управление физическими дисками
-        </h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Игра
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Новые
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Б/У
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Действия
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {disksData.map((item) => (
-                <tr key={item.gameId} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">{item.gameTitle}</td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm">
-                      {item.newStock} шт. × {item.newPrice}₸
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm">
-                      {item.usedStock} шт. × {item.usedPrice}₸
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() =>
-                        openDiskModal({
-                          gameId: item.gameId,
-                          diskId: item.diskId,
-                          gameTitle: item.gameTitle,
-                          newPrice: item.newPrice,
-                          usedPrice: item.usedPrice,
-                          newStock: item.newStock,
-                          usedStock: item.usedStock,
-                        })
-                      }
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm transition-colors"
-                    >
-                      Редактировать
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* Секция цифровых копий */}
+    <div className="space-y-10">
+      {/* Физические диски */}
       <section>
-        <h2 className="text-2xl font-bold mb-6">
-          Управление цифровыми копиями
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-5">
+          Физические диски
         </h2>
-        <div className="mb-4">
-          <button
-            onClick={() =>
-              openDigitalModal({
-                type: "add_set",
-                modalTitle: "Добавить новый набор цифровых копий",
-              })
-            }
-            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors"
-          >
-            Добавить новый набор
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Игра
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Платформа
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Цена
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Доступно
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Статус
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Действия
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {digitalData.map((game) =>
-                game.digitalSets.map((set, index) => (
-                  <tr
-                    key={set._id || `digital-set-${game.gameId}-${index}`}
-                    className="hover:bg-gray-50"
-                  >
-                    <td className="px-6 py-4">{game.gameTitle}</td>
-                    <td className="px-6 py-4">{set.platform}</td>
-                    <td className="px-6 py-4">{set.price} ₸</td>
-                    <td className="px-6 py-4">
-                      {Array.isArray(set.credentials)
-                        ? `${set.activeCredentials} / ${set.totalCredentials}`
-                        : "0 / 0"}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${
-                          set.isActive
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {set.isActive ? "Активен" : "Неактивен"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 space-x-2">
-                      <button
-                        onClick={() =>
-                          openDigitalModal({
-                            type: "view_set",
-                            setId: set._id,
-                            gameId: game.gameId,
-                            gameTitle: game.gameTitle,
-                            platform: set.platform,
-                            price: set.price,
-                            isActive: set.isActive,
-                            credentials: set.credentials,
-                          })
-                        }
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm transition-colors"
-                      >
-                        Просмотр
-                      </button>
-                      <button
-                        onClick={() =>
-                          openDigitalModal({
-                            type: "add_credential",
-                            setId: set._id,
-                            gameTitle: game.gameTitle,
-                            platform: set.platform,
-                          })
-                        }
-                        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm transition-colors"
-                      >
-                        Добавить копию
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleDigitalUpdate("update_set", {
-                            setId: set._id,
-                            isActive: !set.isActive,
-                          })
-                        }
-                        className={`${
-                          set.isActive
-                            ? "bg-yellow-500 hover:bg-yellow-600"
-                            : "bg-emerald-500 hover:bg-emerald-600"
-                        } text-white px-4 py-2 rounded text-sm transition-colors`}
-                      >
-                        {set.isActive ? "Деактивировать" : "Активировать"}
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleDigitalDelete("delete_set", { setId: set._id })
-                        }
-                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm transition-colors"
-                      >
-                        Удалить
-                      </button>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50 dark:bg-gray-900/50">
+                <tr>
+                  {["Игра", "Новые", "Б/У", "Действия"].map((h) => (
+                    <th
+                      key={h}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {disksData.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-400">
+                      Данных нет
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  disksData.map((item) => (
+                    <tr
+                      key={item.gameId}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors"
+                    >
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                        {item.gameTitle}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                        {item.newStock} шт. × {item.newPrice} ₸
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                        {item.usedStock} шт. × {item.usedPrice} ₸
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() =>
+                            openDiskModal({
+                              gameId: item.gameId,
+                              diskId: item.diskId,
+                              gameTitle: item.gameTitle,
+                              newPrice: item.newPrice,
+                              usedPrice: item.usedPrice,
+                              newStock: item.newStock,
+                              usedStock: item.usedStock,
+                            })
+                          }
+                          className="text-sm px-3 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-400 rounded-lg transition-colors"
+                        >
+                          Редактировать
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
-      {/* Модальное окно для физических дисков */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setModalData(null);
-          setIsModalOpen(false);
-        }}
-      >
+      {/* Цифровые копии */}
+      <section>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            Цифровые копии
+          </h2>
+          <button
+            onClick={() => openDigitalModal({ type: "add_set" })}
+            className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-medium text-sm rounded-lg transition-colors"
+          >
+            + Добавить набор
+          </button>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50 dark:bg-gray-900/50">
+                <tr>
+                  {["Игра", "Платформа", "Цена", "Доступно", "Статус", "Действия"].map((h) => (
+                    <th
+                      key={h}
+                      className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {digitalData.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-10 text-center text-sm text-gray-400">
+                      Цифровых копий нет
+                    </td>
+                  </tr>
+                ) : (
+                  digitalData.map((game) =>
+                    game.digitalSets.map((set, index) => (
+                      <tr
+                        key={set._id || `${game.gameId}-${index}`}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors"
+                      >
+                        <td className="px-5 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                          {game.gameTitle}
+                        </td>
+                        <td className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
+                          {set.platform}
+                        </td>
+                        <td className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
+                          {set.price} ₸
+                        </td>
+                        <td className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
+                          {Array.isArray(set.credentials)
+                            ? `${set.activeCredentials} / ${set.totalCredentials}`
+                            : "0 / 0"}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span
+                            className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+                              set.isActive
+                                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                            }`}
+                          >
+                            {set.isActive ? "Активен" : "Неактивен"}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex flex-wrap gap-1.5">
+                            <button
+                              onClick={() =>
+                                openDigitalModal({
+                                  type: "view_set",
+                                  setId: set._id,
+                                  gameId: game.gameId,
+                                  gameTitle: game.gameTitle,
+                                  platform: set.platform,
+                                  price: set.price,
+                                  isActive: set.isActive,
+                                  credentials: set.credentials,
+                                })
+                              }
+                              className="text-xs px-2.5 py-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-400 rounded-lg transition-colors"
+                            >
+                              Просмотр
+                            </button>
+                            <button
+                              onClick={() =>
+                                openDigitalModal({
+                                  type: "add_credential",
+                                  setId: set._id,
+                                  gameTitle: game.gameTitle,
+                                  platform: set.platform,
+                                })
+                              }
+                              className="text-xs px-2.5 py-1 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40 text-green-700 dark:text-green-400 rounded-lg transition-colors"
+                            >
+                              + Копию
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleDigitalUpdate("update_set", {
+                                  setId: set._id,
+                                  isActive: !set.isActive,
+                                })
+                              }
+                              className={`text-xs px-2.5 py-1 rounded-lg transition-colors ${
+                                set.isActive
+                                  ? "bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400"
+                                  : "bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400"
+                              }`}
+                            >
+                              {set.isActive ? "Деакт." : "Акт."}
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleDigitalDelete("delete_set", { setId: set._id })
+                              }
+                              className="text-xs px-2.5 py-1 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-700 dark:text-red-400 rounded-lg transition-colors"
+                            >
+                              Удалить
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* Модальное окно физических дисков */}
+      <Modal isOpen={isModalOpen} onClose={() => { setModalData(null); setIsModalOpen(false); }}>
         {modalData && (
-          <div className="p-6">
-            <h3 className="text-xl font-bold mb-4">
-              {modalData.diskId ? "Редактирование" : "Добавление"} -{" "}
+          <div className="space-y-5">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
               {modalData.gameTitle}
             </h3>
             <div className="space-y-4">
               <div>
-                <h4 className="font-medium mb-2">Новые диски</h4>
-                <div className="flex space-x-4">
-                  <input
-                    type="number"
-                    placeholder="Количество"
-                    defaultValue={modalData.newStock}
-                    onChange={(e) =>
-                      (modalData.newStock = parseInt(e.target.value))
-                    }
-                    className="border p-2 rounded w-1/2"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Цена"
-                    defaultValue={modalData.newPrice}
-                    onChange={(e) =>
-                      (modalData.newPrice = parseFloat(e.target.value))
-                    }
-                    className="border p-2 rounded w-1/2"
-                  />
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Новые диски</p>
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">Количество</label>
+                    <input
+                      type="number"
+                      defaultValue={modalData.newStock}
+                      onChange={(e) => (modalData.newStock = parseInt(e.target.value))}
+                      className="w-full mt-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">Цена (₸)</label>
+                    <input
+                      type="number"
+                      defaultValue={modalData.newPrice}
+                      onChange={(e) => (modalData.newPrice = parseFloat(e.target.value))}
+                      className="w-full mt-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    />
+                  </div>
                 </div>
               </div>
               <div>
-                <h4 className="font-medium mb-2">Б/У диски</h4>
-                <div className="flex space-x-4">
-                  <input
-                    type="number"
-                    placeholder="Количество"
-                    defaultValue={modalData.usedStock}
-                    onChange={(e) =>
-                      (modalData.usedStock = parseInt(e.target.value))
-                    }
-                    className="border p-2 rounded w-1/2"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Цена"
-                    defaultValue={modalData.usedPrice}
-                    onChange={(e) =>
-                      (modalData.usedPrice = parseFloat(e.target.value))
-                    }
-                    className="border p-2 rounded w-1/2"
-                  />
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Б/У диски</p>
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">Количество</label>
+                    <input
+                      type="number"
+                      defaultValue={modalData.usedStock}
+                      onChange={(e) => (modalData.usedStock = parseInt(e.target.value))}
+                      className="w-full mt-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">Цена (₸)</label>
+                    <input
+                      type="number"
+                      defaultValue={modalData.usedPrice}
+                      onChange={(e) => (modalData.usedPrice = parseFloat(e.target.value))}
+                      className="w-full mt-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="flex justify-end space-x-4 mt-6">
-                <button
-                  onClick={() => {
-                    setModalData(null);
-                    setIsModalOpen(false);
-                  }}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded transition-colors"
-                >
-                  Отмена
-                </button>
-                <button
-                  onClick={() => {
-                    handleUpdate(
-                      modalData.diskId,
-                      "new",
-                      modalData.newPrice,
-                      modalData.newStock,
-                      modalData.gameId
-                    );
-                    handleUpdate(
-                      modalData.diskId,
-                      "used",
-                      modalData.usedPrice,
-                      modalData.usedStock,
-                      modalData.gameId
-                    );
-                  }}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors"
-                >
-                  Сохранить
-                </button>
-              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => { setModalData(null); setIsModalOpen(false); }}
+                className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={() => {
+                  handleUpdate(modalData.diskId, "new", modalData.newPrice, modalData.newStock, modalData.gameId);
+                  handleUpdate(modalData.diskId, "used", modalData.usedPrice, modalData.usedStock, modalData.gameId);
+                }}
+                className="px-4 py-2 text-sm bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-medium rounded-lg"
+              >
+                Сохранить
+              </button>
             </div>
           </div>
         )}
       </Modal>
 
-      {/* Модальное окно для цифровых копий */}
+      {/* Модальное окно цифровых копий */}
       <Modal
         isOpen={isDigitalModalOpen}
-        onClose={() => {
-          setDigitalModalData(null);
-          setIsDigitalModalOpen(false);
-        }}
+        onClose={() => { setDigitalModalData(null); setIsDigitalModalOpen(false); }}
       >
         {digitalModalData && (
-          <div className="p-6">
-            <h3 className="text-xl font-bold mb-4">
+          <div className="space-y-5">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
               {digitalModalData.modalTitle ||
                 (digitalModalData.gameTitle
-                  ? `${
-                      digitalModalData.type === "view_set"
-                        ? "Просмотр"
-                        : "Редактирование"
-                    } - ${digitalModalData.gameTitle}`
+                  ? `${digitalModalData.type === "view_set" ? "Просмотр" : "Редактирование"} — ${digitalModalData.gameTitle}`
                   : "Цифровые копии")}
             </h3>
 
-            {/* Просмотр набора цифровых копий и учетных данных */}
+            {/* Просмотр набора */}
             {digitalModalData.type === "view_set" && (
-              <div className="space-y-6">
-                {error && (
-                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-                    <span className="block sm:inline">{error}</span>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Игра</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{digitalModalData.gameTitle}</p>
                   </div>
-                )}
-                <div className="bg-gray-50 p-4 rounded border mb-6">
-                  <h4 className="font-medium mb-3">Информация о наборе</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p>
-                        <span className="font-medium">Игра:</span>{" "}
-                        {digitalModalData.gameTitle}
-                      </p>
-                      <p>
-                        <span className="font-medium">Платформа:</span>{" "}
-                        {digitalModalData.platform}
-                      </p>
-                    </div>
-                    <div>
-                      <p>
-                        <span className="font-medium">Цена:</span>{" "}
-                        {digitalModalData.price} ₸
-                      </p>
-                      <p>
-                        <span className="font-medium">Статус:</span>
-                        <span
-                          className={`ml-2 px-2 py-1 rounded-full text-xs ${
-                            digitalModalData.isActive
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {digitalModalData.isActive ? "Активен" : "Неактивен"}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2 mt-4">
-                    <button
-                      onClick={() =>
-                        handleDigitalUpdate("update_set", {
-                          setId: digitalModalData.setId,
-                          isActive: !digitalModalData.isActive,
-                        })
-                      }
-                      disabled={isSubmitting}
-                      className={`${
-                        digitalModalData.isActive
-                          ? "bg-yellow-500 hover:bg-yellow-600"
-                          : "bg-emerald-500 hover:bg-emerald-600"
-                      } text-white px-3 py-1 rounded text-sm transition-colors disabled:opacity-50`}
-                    >
-                      {isSubmitting
-                        ? "Сохранение..."
-                        : digitalModalData.isActive
-                        ? "Деактивировать набор"
-                        : "Активировать набор"}
-                    </button>
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Платформа / Цена</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{digitalModalData.platform} · {digitalModalData.price} ₸</p>
                   </div>
                 </div>
+                <button
+                  onClick={() =>
+                    handleDigitalUpdate("update_set", {
+                      setId: digitalModalData.setId,
+                      isActive: !digitalModalData.isActive,
+                    })
+                  }
+                  disabled={isLoading}
+                  className={`text-sm px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 ${
+                    digitalModalData.isActive
+                      ? "bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-400"
+                      : "bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:hover:bg-green-900/50 text-green-800 dark:text-green-400"
+                  }`}
+                >
+                  {digitalModalData.isActive ? "Деактивировать набор" : "Активировать набор"}
+                </button>
 
-                <h4 className="font-medium mb-3">
-                  Учетные данные в наборе (
-                  {Array.isArray(digitalModalData.credentials)
-                    ? digitalModalData.credentials.length
-                    : 0}
-                  )
-                </h4>
-
-                <div className="space-y-4">
-                  {Array.isArray(digitalModalData.credentials)
-                    ? digitalModalData.credentials.map((credential, index) => (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Учётные данные ({Array.isArray(digitalModalData.credentials) ? digitalModalData.credentials.length : 0})
+                  </p>
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    {Array.isArray(digitalModalData.credentials) && digitalModalData.credentials.length > 0 ? (
+                      digitalModalData.credentials.map((cred, index) => (
                         <div
-                          key={
-                            credential._id ||
-                            `credential-${digitalModalData.setId}-${index}`
-                          }
-                          className="border p-4 rounded"
+                          key={cred._id || index}
+                          className="flex items-start justify-between gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
                         >
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p>
-                                <span className="font-medium">Логин:</span>{" "}
-                                {credential.login}
-                              </p>
-                              <p>
-                                <span className="font-medium">Пароль:</span>{" "}
-                                {credential.password}
-                              </p>
-                              <p>
-                                <span className="font-medium">Статус:</span>{" "}
-                                <span
-                                  className={`px-2 py-1 rounded-full text-xs ${
-                                    credential.isActive
-                                      ? "bg-green-100 text-green-800"
-                                      : "bg-red-100 text-red-800"
-                                  }`}
-                                >
-                                  {credential.isActive
-                                    ? "Активен"
-                                    : "Неактивен"}
-                                </span>
-                              </p>
-                              {credential.createdAt && (
-                                <p>
-                                  <span className="font-medium">Создан:</span>{" "}
-                                  {new Date(
-                                    credential.createdAt
-                                  ).toLocaleDateString()}
-                                </p>
-                              )}
-                            </div>
-                            <div className="space-x-2">
-                              <button
-                                onClick={() =>
-                                  handleDigitalUpdate("update_credential", {
-                                    setId: digitalModalData.setId,
-                                    credentialId: credential._id,
-                                    credentialIsActive: !credential.isActive,
-                                  })
-                                }
-                                className={`${
-                                  credential.isActive
-                                    ? "bg-yellow-500 hover:bg-yellow-600"
-                                    : "bg-green-500 hover:bg-green-600"
-                                } text-white px-3 py-1 rounded text-sm transition-colors`}
-                              >
-                                {credential.isActive
-                                  ? "Деактивировать"
-                                  : "Активировать"}
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleDigitalDelete("delete_credential", {
-                                    setId: digitalModalData.setId,
-                                    credentialId: credential._id,
-                                  })
-                                }
-                                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors"
-                              >
-                                Удалить
-                              </button>
-                            </div>
+                          <div className="min-w-0 text-sm">
+                            <p className="text-gray-900 dark:text-white font-mono truncate">{cred.login}</p>
+                            <p className="text-gray-500 dark:text-gray-400 font-mono truncate">{cred.password}</p>
+                            <span
+                              className={`inline-flex px-1.5 py-0.5 rounded text-xs mt-1 ${
+                                cred.isActive
+                                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                  : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                              }`}
+                            >
+                              {cred.isActive ? "Активен" : "Использован"}
+                            </span>
                           </div>
+                          <button
+                            onClick={() =>
+                              handleDigitalDelete("delete_credential", {
+                                setId: digitalModalData.setId,
+                                credentialId: cred._id,
+                              })
+                            }
+                            className="text-xs px-2 py-1 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-700 dark:text-red-400 rounded-lg flex-shrink-0"
+                          >
+                            Удалить
+                          </button>
                         </div>
                       ))
-                    : null}
-
-                  {(!Array.isArray(digitalModalData.credentials) ||
-                    digitalModalData.credentials.length === 0) && (
-                    <div className="text-center py-6 bg-gray-50 rounded">
-                      <p className="text-gray-500">
-                        В этом наборе пока нет учетных данных
-                      </p>
-                    </div>
-                  )}
+                    ) : (
+                      <p className="text-sm text-gray-400 text-center py-4">Учётных данных нет</p>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex justify-end mt-4">
+                <div className="flex justify-end">
                   <button
-                    onClick={() => {
-                      setDigitalModalData(null);
-                      setIsDigitalModalOpen(false);
-                      setError(null);
-                    }}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded transition-colors"
-                    disabled={isSubmitting}
+                    onClick={() => { setDigitalModalData(null); setIsDigitalModalOpen(false); }}
+                    className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg"
                   >
                     Закрыть
                   </button>
@@ -749,53 +586,32 @@ export default function AdminKeysPage() {
               </div>
             )}
 
-            {/* Добавление нового набора цифровых копий */}
-            {digitalModalData?.type === "add_set" && (
+            {/* Создание нового набора */}
+            {digitalModalData.type === "add_set" && (
               <div className="space-y-4">
-                {error && (
-                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-                    <span className="block sm:inline">{error}</span>
-                  </div>
-                )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Игра *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Игра *</label>
                   <select
-                    className="border p-2 rounded w-full"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     value={digitalModalData.gameId || ""}
                     onChange={(e) => {
-                      const selectedOption =
-                        e.target.options[e.target.selectedIndex];
-                      setDigitalModalData({
-                        ...digitalModalData,
-                        gameId: selectedOption.value,
-                        gameTitle: selectedOption.text,
-                      });
+                      const opt = e.target.options[e.target.selectedIndex];
+                      setDigitalModalData({ ...digitalModalData, gameId: opt.value, gameTitle: opt.text });
                     }}
                     disabled={isLoading}
                   >
                     <option value="">Выберите игру...</option>
                     {disksData.map((game) => (
-                      <option key={game.gameId} value={game.gameId}>
-                        {game.gameTitle}
-                      </option>
+                      <option key={game.gameId} value={game.gameId}>{game.gameTitle}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Платформа *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Платформа *</label>
                   <select
-                    className="border p-2 rounded w-full"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     value={digitalModalData.platform || ""}
-                    onChange={(e) => {
-                      setDigitalModalData({
-                        ...digitalModalData,
-                        platform: e.target.value,
-                      });
-                    }}
+                    onChange={(e) => setDigitalModalData({ ...digitalModalData, platform: e.target.value })}
                     disabled={isLoading}
                   >
                     <option value="">Выберите платформу...</option>
@@ -807,116 +623,79 @@ export default function AdminKeysPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Цена (₸) *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Цена (₸) *</label>
                   <input
                     type="number"
                     min="0"
-                    className="border p-2 rounded w-full"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     value={digitalModalData.price || ""}
                     onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      setDigitalModalData({
-                        ...digitalModalData,
-                        price: !isNaN(value) ? value : "",
-                      });
+                      const v = parseInt(e.target.value);
+                      setDigitalModalData({ ...digitalModalData, price: !isNaN(v) ? v : "" });
                     }}
                     disabled={isLoading}
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Добавить учетные данные (необязательно):
+                <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Первые учётные данные (необязательно)
                   </label>
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">
-                        Логин
-                      </label>
+                      <label className="text-xs text-gray-500 dark:text-gray-400">Логин</label>
                       <input
                         type="text"
-                        className="border p-2 rounded w-full"
+                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                         value={digitalModalData.credential?.login || ""}
-                        onChange={(e) => {
+                        onChange={(e) =>
                           setDigitalModalData({
                             ...digitalModalData,
-                            credential: {
-                              ...digitalModalData.credential,
-                              login: e.target.value,
-                            },
-                          });
-                        }}
+                            credential: { ...digitalModalData.credential, login: e.target.value },
+                          })
+                        }
                         disabled={isLoading}
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">
-                        Пароль
-                      </label>
+                      <label className="text-xs text-gray-500 dark:text-gray-400">Пароль</label>
                       <input
                         type="text"
-                        className="border p-2 rounded w-full"
+                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                         value={digitalModalData.credential?.password || ""}
-                        onChange={(e) => {
+                        onChange={(e) =>
                           setDigitalModalData({
                             ...digitalModalData,
-                            credential: {
-                              ...digitalModalData.credential,
-                              password: e.target.value,
-                            },
-                          });
-                        }}
+                            credential: { ...digitalModalData.credential, password: e.target.value },
+                          })
+                        }
                         disabled={isLoading}
                       />
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-end space-x-4 mt-6">
+                <div className="flex justify-end gap-3 pt-2">
                   <button
-                    onClick={() => {
-                      setDigitalModalData(null);
-                      setIsDigitalModalOpen(false);
-                      setError(null);
-                    }}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded transition-colors"
+                    onClick={() => { setDigitalModalData(null); setIsDigitalModalOpen(false); }}
                     disabled={isLoading}
+                    className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg"
                   >
                     Отмена
                   </button>
                   <button
                     onClick={() => {
-                      // Валидация перед отправкой
-                      if (!digitalModalData.gameId) {
-                        setError("Выберите игру");
+                      if (!digitalModalData.gameId) { toast.error("Выберите игру"); return; }
+                      if (!digitalModalData.platform) { toast.error("Выберите платформу"); return; }
+                      if (!digitalModalData.price) { toast.error("Укажите цену"); return; }
+                      const hasLogin = !!digitalModalData.credential?.login;
+                      const hasPass = !!digitalModalData.credential?.password;
+                      if ((hasLogin && !hasPass) || (!hasLogin && hasPass)) {
+                        toast.error("Заполните оба поля учётных данных или оставьте пустыми");
                         return;
                       }
-                      if (!digitalModalData.platform) {
-                        setError("Выберите платформу");
-                        return;
-                      }
-                      if (!digitalModalData.price) {
-                        setError("Укажите цену");
-                        return;
-                      }
-
-                      // Проверка учетных данных, если они были введены
-                      if (
-                        (digitalModalData.credential?.login &&
-                          !digitalModalData.credential?.password) ||
-                        (!digitalModalData.credential?.login &&
-                          digitalModalData.credential?.password)
-                      ) {
-                        setError(
-                          "Заполните оба поля учетных данных или оставьте их пустыми"
-                        );
-                        return;
-                      }
-
                       handleDigitalUpdate("create_set", digitalModalData);
                     }}
                     disabled={isLoading}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
+                    className="px-4 py-2 text-sm bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-gray-900 font-medium rounded-lg"
                   >
                     {isLoading ? "Сохранение..." : "Создать набор"}
                   </button>
@@ -924,83 +703,55 @@ export default function AdminKeysPage() {
               </div>
             )}
 
-            {/* Добавление новых учетных данных в существующий набор */}
+            {/* Добавление учётных данных */}
             {digitalModalData.type === "add_credential" && (
               <div className="space-y-4">
-                {error && (
-                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-                    <span className="block sm:inline">{error}</span>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Игра</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{digitalModalData.gameTitle}</p>
                   </div>
-                )}
-                <div className="bg-gray-50 p-4 rounded mb-4">
-                  <p>
-                    <span className="font-medium">Игра:</span>{" "}
-                    {digitalModalData.gameTitle}
-                  </p>
-                  <p>
-                    <span className="font-medium">Платформа:</span>{" "}
-                    {digitalModalData.platform}
-                  </p>
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Платформа</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{digitalModalData.platform}</p>
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Логин *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Логин *</label>
                   <input
                     type="text"
-                    className="border p-2 rounded w-full"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     value={credentialModalData.login}
-                    onChange={(e) => {
-                      setCredentialModalData({
-                        ...credentialModalData,
-                        login: e.target.value,
-                      });
-                    }}
+                    onChange={(e) => setCredentialModalData({ ...credentialModalData, login: e.target.value })}
                     disabled={isSubmitting}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Пароль *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Пароль *</label>
                   <input
                     type="text"
-                    className="border p-2 rounded w-full"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     value={credentialModalData.password}
-                    onChange={(e) => {
-                      setCredentialModalData({
-                        ...credentialModalData,
-                        password: e.target.value,
-                      });
-                    }}
+                    onChange={(e) => setCredentialModalData({ ...credentialModalData, password: e.target.value })}
                     disabled={isSubmitting}
                   />
                 </div>
-                <div className="flex justify-end space-x-4 mt-6">
+                <div className="flex justify-end gap-3 pt-2">
                   <button
                     onClick={() => {
                       setDigitalModalData(null);
                       setIsDigitalModalOpen(false);
-                      setError(null);
                       setCredentialModalData({ login: "", password: "" });
                     }}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded transition-colors"
                     disabled={isSubmitting}
+                    className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg"
                   >
                     Отмена
                   </button>
                   <button
                     onClick={() => {
-                      // Валидация перед отправкой
-                      if (!credentialModalData.login?.trim()) {
-                        setError("Введите логин");
-                        return;
-                      }
-                      if (!credentialModalData.password?.trim()) {
-                        setError("Введите пароль");
-                        return;
-                      }
-
+                      if (!credentialModalData.login?.trim()) { toast.error("Введите логин"); return; }
+                      if (!credentialModalData.password?.trim()) { toast.error("Введите пароль"); return; }
                       handleDigitalUpdate("add_credential", {
                         setId: digitalModalData.setId,
                         credential: {
@@ -1010,7 +761,7 @@ export default function AdminKeysPage() {
                       });
                     }}
                     disabled={isSubmitting}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
+                    className="px-4 py-2 text-sm bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-gray-900 font-medium rounded-lg"
                   >
                     {isSubmitting ? "Сохранение..." : "Добавить"}
                   </button>
@@ -1020,6 +771,17 @@ export default function AdminKeysPage() {
           </div>
         )}
       </Modal>
+
+      {/* Диалог подтверждения */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ isOpen: false, message: "", onConfirm: null })}
+        onConfirm={() => confirmDialog.onConfirm?.()}
+        title="Подтвердите удаление"
+        message={confirmDialog.message}
+        confirmLabel="Удалить"
+        confirmVariant="danger"
+      />
     </div>
   );
 }

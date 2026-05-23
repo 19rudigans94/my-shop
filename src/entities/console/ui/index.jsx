@@ -13,7 +13,7 @@ export default function ConsoleCard({ console, onClick }) {
     >
       <div className="aspect-video bg-gray-200 dark:bg-gray-700 relative">
         <Image
-          src={console.image}
+          src={console.images?.[0] || "/images/placeholder.svg"}
           alt={console.title}
           placeholder="blur"
           blurDataURL={blurDataURL}

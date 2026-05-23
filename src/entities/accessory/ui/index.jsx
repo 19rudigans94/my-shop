@@ -10,7 +10,7 @@ export default function AccessoryCard({ accessory, onClick }) {
     >
       <div className="aspect-video bg-gray-200 dark:bg-gray-700 relative">
         <Image
-          src={accessory.image}
+          src={accessory.images?.[0] || "/images/placeholder.svg"}
           alt={accessory.title}
           fill
           className="object-cover"

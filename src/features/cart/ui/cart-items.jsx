@@ -72,7 +72,7 @@ export default function CartItems() {
                 <div className="flex-shrink-0">
                   <div className="relative w-20 h-20 rounded-md overflow-hidden">
                     <Image
-                      src={item.image}
+                      src={item.image || "/images/placeholder.svg"}
                       alt={item.title}
                       fill
                       className="object-cover"

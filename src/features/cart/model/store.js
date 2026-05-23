@@ -43,7 +43,7 @@ const useCartStore = create(
               id: item._id,
               title: item.title || "Без названия",
               price: Number(item.price) || 0,
-              image: item.image || "/images/placeholder.svg",
+              image: item.images?.[0] || item.image || "/images/placeholder.svg",
               platform: item.platform || "Не указана",
               quantity: 1,
               type: item.type || "game",

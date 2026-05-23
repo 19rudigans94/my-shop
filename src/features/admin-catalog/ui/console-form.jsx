@@ -1,17 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Image from "next/image";
+import { useState, useEffect, useRef } from "react";
+import { useToast } from "@/shared/ui/toast";
+import ImageUploader from "@/shared/ui/image-uploader";
 
 export default function ConsoleForm({ console, onSubmit, onCancel }) {
+  const { toast } = useToast();
+  const uploaderRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    state: true,
-    price: "",
-    stock: "",
-    image: "",
-    youtubeUrl: "",
+    title: console?.title || "",
+    description: console?.description || "",
+    state: console?.state ?? true,
+    price: console?.price || "",
+    stock: console?.stock || "",
+    images: console?.images || [],
+    youtubeUrl: console?.youtubeUrl || "",
   });
 
   useEffect(() => {
@@ -22,15 +27,30 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
         state: console.state ?? true,
         price: console.price || "",
         stock: console.stock || "",
-        image: console.image || "",
+        images: console.images || [],
         youtubeUrl: console.youtubeUrl || "",
       });
     }
   }, [console]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(formData);
+
+    try {
+      setUploading(true);
+      const uploadedImages = await uploaderRef.current.uploadPending();
+
+      if (uploadedImages.length === 0) {
+        toast.error("Добавьте хотя бы одно изображение");
+        return;
+      }
+
+      onSubmit({ ...formData, images: uploadedImages });
+    } catch (err) {
+      toast.error(err.message || "Ошибка при загрузке изображений");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -46,7 +66,7 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, title: e.target.value }))
             }
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white"
             required
           />
         </div>
@@ -63,7 +83,7 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
                 state: e.target.value === "true",
               }))
             }
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white"
             required
           >
             <option value="true">Новый</option>
@@ -81,7 +101,7 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, price: e.target.value }))
             }
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white"
             required
             min="0"
           />
@@ -97,28 +117,13 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, stock: e.target.value }))
             }
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white"
             required
             min="0"
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            URL изображения
-          </label>
-          <input
-            type="url"
-            value={formData.image}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, image: e.target.value }))
-            }
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
-            required
-          />
-        </div>
-
-        <div>
+        <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             URL видео
           </label>
@@ -128,7 +133,7 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, youtubeUrl: e.target.value }))
             }
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white"
           />
         </div>
       </div>
@@ -143,8 +148,19 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
             setFormData((prev) => ({ ...prev, description: e.target.value }))
           }
           rows={4}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white"
           required
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Изображения
+        </label>
+        <ImageUploader
+          ref={uploaderRef}
+          images={formData.images}
+          uploadType="consoles"
         />
       </div>
 
@@ -158,9 +174,10 @@ export default function ConsoleForm({ console, onSubmit, onCancel }) {
         </button>
         <button
           type="submit"
-          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+          disabled={uploading}
+          className="px-4 py-2 bg-yellow-500 text-gray-900 font-medium rounded-lg hover:bg-yellow-600 transition-colors disabled:opacity-60"
         >
-          {console ? "Сохранить изменения" : "Создать консоль"}
+          {uploading ? "Загрузка..." : console ? "Сохранить изменения" : "Создать консоль"}
         </button>
       </div>
     </form>

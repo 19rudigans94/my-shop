@@ -25,9 +25,9 @@ const accessorySchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  image: {
-    type: String,
-    required: true,
+  images: {
+    type: [String],
+    default: [],
   },
   slug: {
     type: String,
