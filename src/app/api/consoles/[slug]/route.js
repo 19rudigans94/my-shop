@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import connectDB from "@/shared/lib/db/mongodb";
 import Console from "@/entities/console/model/schema";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request, { params }) {
   try {
     const connection = await connectDB();

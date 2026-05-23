@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import connectDB from "@/shared/lib/db/mongodb";
 import Order from "@/entities/order/model/schema";
 
+export const dynamic = 'force-dynamic';
+
 const VALID_STATUSES = ["pending", "paid", "processing", "completed", "cancelled"];
 
 export async function PATCH(request, { params }) {

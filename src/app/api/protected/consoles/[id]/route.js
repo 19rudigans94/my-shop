@@ -4,6 +4,8 @@ import Console from "@/entities/console/model/schema";
 import { generateUniqueSlug } from "@/shared/lib/slug";
 import { deleteImagesFromS3 } from "@/shared/lib/storage/s3";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request, { params }) {
   try {
     const connection = await connectDB();
