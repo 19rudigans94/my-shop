@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import Accessory from "@/models/Accessory";
-import { generateSlug } from "@/lib/utils";
+import connectDB from "@/shared/lib/db/mongodb";
+import Accessory from "@/entities/accessory/model/schema";
+import { generateSlug } from "@/shared/lib/slug";
 
 // Получение конкретного аксессуара
 export async function GET(request, { params }) {

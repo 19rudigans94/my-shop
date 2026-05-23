@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import Console from "@/models/Console";
+import connectDB from "@/shared/lib/db/mongodb";
+import Console from "@/entities/console/model/schema";
 
 export async function GET(request, { params }) {
   try {

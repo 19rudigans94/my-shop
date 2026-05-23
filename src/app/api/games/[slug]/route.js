@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import Game from "@/models/Game";
+import connectDB from "@/shared/lib/db/mongodb";
+import Game from "@/entities/game/model/schema";
 
 export async function GET(request, { params }) {
   try {

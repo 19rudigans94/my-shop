@@ -1,7 +1,7 @@
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/providers/ThemeProvider";
-import { Header } from "@/app/components/Header/Header";
+import { ThemeProvider } from "@/shared/ui/theme-provider";
+import { Header } from "@/widgets/header/ui/header";
 
 const jetBrainsMono = JetBrains_Mono({
   subsets: ["latin", "cyrillic"],

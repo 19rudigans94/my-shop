@@ -1,4 +1,4 @@
-import connectDB from "@/lib/mongodb";
+import connectDB from "@/shared/lib/db/mongodb";
 import { ObjectId } from "mongodb";
 
 export async function GET() {

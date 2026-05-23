@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { testEmailConfiguration } from "@/app/utils/sendEmail";
+import { testEmailConfiguration } from "@/shared/lib/email";
 
 /**
  * Диагностический endpoint для проверки email системы

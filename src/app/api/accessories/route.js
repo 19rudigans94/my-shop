@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import Accessory from "@/models/Accessory";
-import { generateSlug } from "@/lib/utils";
+import connectDB from "@/shared/lib/db/mongodb";
+import Accessory from "@/entities/accessory/model/schema";
+import { generateSlug } from "@/shared/lib/slug";
 
 export async function GET(request) {
   try {
@@ -24,20 +24,13 @@ export async function GET(request) {
       }
     }
 
-    // console.log("Фильтры:", filters);
-
-    // Получаем общее количество записей
     const total = await Accessory.countDocuments(filters);
-    // console.log("Всего записей:", total);
 
-    // Получаем отфильтрованные аксессуары с пагинацией
     const accessories = await Accessory.find(filters)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean(); // Преобразуем в простые объекты
-
-    // console.log("Найдено аксессуаров:", accessories.length);
+      .lean();
 
     if (!accessories) {
       throw new Error("Аксессуары не найдены");

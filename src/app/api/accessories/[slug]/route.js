@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import Accessory from "@/models/Accessory";
+import connectDB from "@/shared/lib/db/mongodb";
+import Accessory from "@/entities/accessory/model/schema";
 
 export async function GET(request, { params }) {
   try {

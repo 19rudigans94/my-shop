@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import Console from "@/models/Console";
-import { generateSlug } from "@/lib/utils";
+import connectDB from "@/shared/lib/db/mongodb";
+import Console from "@/entities/console/model/schema";
+import { generateSlug } from "@/shared/lib/slug";
 
 // Получение списка консолей
 export async function GET() {

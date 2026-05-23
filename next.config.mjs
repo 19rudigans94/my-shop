@@ -1,10 +1,29 @@
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  webpack(config) {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@shared': path.resolve(__dirname, 'src/shared'),
+      '@entities': path.resolve(__dirname, 'src/entities'),
+      '@features': path.resolve(__dirname, 'src/features'),
+      '@widgets': path.resolve(__dirname, 'src/widgets'),
+      '@page-views': path.resolve(__dirname, 'src/page-views'),
+    }
+    return config
+  },
   reactStrictMode: true,
   images: {
     unoptimized: true,
   },
   output: 'standalone',
+  compiler: {
+    removeConsole: process.env.NODE_ENV === "production",
+  },
   poweredByHeader: false,
 
   async redirects() {

@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import connectDB from "@/shared/lib/db/mongodb";
+import Game from "@/entities/game/model/schema";
+import DigitalCopy from "@/entities/game/model/digital-copy-schema";
 
 export async function GET(request, { params }) {
   try {
     const { slug } = await params;
-    console.log("Получен slug:", slug);
 
     if (!slug) {
       return NextResponse.json(
@@ -14,45 +14,32 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Подключаемся к базе данных
-    const mongoose = await connectDB();
-    const db = mongoose.connection.db;
+    await connectDB();
 
-    // Получаем информацию об игре по slug
-    const game = await db.collection("games").findOne({ slug });
-    console.log("Найдена игра:", game._id);
+    const game = await Game.findOne({ slug }).lean();
 
     if (!game) {
       return NextResponse.json({ error: "Игра не найдена" }, { status: 404 });
     }
 
-    // Получаем активные цифровые копии для этой игры
-    const digitalCopies = await db
-      .collection("digitalcopies")
-      .find({
-        gameId: game._id,
-        isActive: true, // ищем только активные наборы
-      })
-      .toArray();
+    const digitalCopies = await DigitalCopy.find({
+      gameId: game._id,
+      isActive: true,
+    }).lean();
 
-    // Форматируем данные о цифровых копиях для клиента
-    // Внимание: мы НЕ отправляем учетные данные, только информацию о наличии копий
-    const copiesFormatted = digitalCopies.map((copy) => ({
+    const copies = digitalCopies.map((copy) => ({
       _id: copy._id.toString(),
       price: copy.price,
       platform: copy.platform,
-      // Посчитаем количество активных учетных данных
       totalAvailable: Array.isArray(copy.credentials)
         ? copy.credentials.filter((cred) => cred.isActive).length
         : 0,
     }));
 
-    console.log("Отправляем ответ:", copiesFormatted);
-    return NextResponse.json({ copies: copiesFormatted });
+    return NextResponse.json({ success: true, copies });
   } catch (error) {
-    console.error("Ошибка при получении цифровых копий:", error);
     return NextResponse.json(
-      { error: "Ошибка сервера: " + error.message },
+      { success: false, error: "Ошибка сервера: " + error.message },
       { status: 500 }
     );
   }
