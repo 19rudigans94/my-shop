@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 async function generateSessionToken(password) {
   const encoder = new TextEncoder();
   const keyData = encoder.encode(process.env.ADMIN_SESSION_SECRET);

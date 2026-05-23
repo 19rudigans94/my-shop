@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { uploadFileToS3 } from "@/shared/lib/storage/s3";
 
+export const dynamic = 'force-dynamic';
+
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_UPLOAD_TYPES = ["games", "consoles", "accessories"];

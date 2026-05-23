@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Диагностический endpoint для проверки доступности PayLink API
  * GET /api/paylink/status
