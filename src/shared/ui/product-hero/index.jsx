@@ -16,7 +16,7 @@ export default function ProductHero({ images = [], title, badges = [] }) {
             src={mainSrc}
             alt={title}
             fill
-            className="object-cover brightness-50"
+            className="object-cover"
             sizes="100vw"
             priority
           />

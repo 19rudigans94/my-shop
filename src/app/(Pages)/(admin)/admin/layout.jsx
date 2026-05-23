@@ -37,7 +37,7 @@ function NavItem({ item, pathname, onClick }) {
       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
         isActive
           ? "bg-yellow-500 text-gray-900"
-          : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white"
+          : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white"
       }`}
     >
       <item.icon className="w-5 h-5 flex-shrink-0" />
@@ -65,7 +65,7 @@ function Sidebar({ pathname, onNavigate }) {
           </div>
           <div>
             <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">GoldGames</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Admin Panel</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Admin Panel</p>
           </div>
         </div>
       </div>
@@ -82,7 +82,7 @@ function Sidebar({ pathname, onNavigate }) {
         <Link
           href="/"
           onClick={onNavigate}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5 flex-shrink-0" />
           На сайт
@@ -131,7 +131,7 @@ export default function AdminLayout({ children }) {
         </aside>
 
         {/* Основной контент */}
-        <div className="flex-1 lg:ml-60 min-w-0">
+        <div className={`flex-1 min-w-0 transition-[margin] duration-200 lg:ml-60 ${sidebarOpen ? 'ml-60' : ''}`}>
           {/* Мобильная шапка */}
           <div className="lg:hidden flex items-center gap-3 px-4 h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
             <button
