@@ -2,54 +2,25 @@ import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
 export async function POST(request) {
-  if (request.method !== "POST") {
-    return NextResponse.json(
-      { message: "Метод не поддерживается" },
-      { status: 405 }
-    );
-  }
-
   try {
     const body = await request.json();
-    const { name, email, message } = body;
+    const { subject, name, email, message } = body;
 
-    // Валидация на сервере
-    if (
-      !name ||
-      typeof name !== "string" ||
-      name.length < 2 ||
-      name.length > 50
-    ) {
-      return NextResponse.json(
-        { message: "Некорректное имя" },
-        { status: 400 }
-      );
+    if (!name || typeof name !== "string" || name.trim().length < 2 || name.length > 50) {
+      return NextResponse.json({ message: "Некорректное имя" }, { status: 400 });
     }
 
-    if (
-      !email ||
-      typeof email !== "string" ||
-      !email.match(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)
-    ) {
-      return NextResponse.json(
-        { message: "Некорректный email" },
-        { status: 400 }
-      );
+    if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ message: "Некорректный email" }, { status: 400 });
     }
 
-    if (
-      !message ||
-      typeof message !== "string" ||
-      message.length < 10 ||
-      message.length > 1000
-    ) {
+    if (!message || typeof message !== "string" || message.trim().length < 10 || message.length > 1000) {
       return NextResponse.json(
         { message: "Сообщение должно быть от 10 до 1000 символов" },
         { status: 400 }
       );
     }
 
-    // Проверяем наличие необходимых переменных окружения
     const requiredEnvVars = [
       "NEXT_SMTP_HOST",
       "NEXT_SMTP_PORT",
@@ -72,28 +43,26 @@ export async function POST(request) {
       host: process.env.NEXT_SMTP_HOST,
       port: Number(process.env.NEXT_SMTP_PORT),
       secure: true,
-      tls: {
-        rejectUnauthorized: false,
-      },
+      tls: { rejectUnauthorized: false },
       auth: {
         user: process.env.NEXT_SMTP_USER,
         pass: process.env.NEXT_SMTP_PASSWORD,
       },
     });
 
-    const htmlContent = generateEmailTemplate({ name, email, message });
-
-    const mailOptions = {
-      from: process.env.NEXT_SMTP_USER, // Используем адрес SMTP сервера как отправителя
-      replyTo: email, // Устанавливаем адрес для ответа
-      to: process.env.NEXT_FEEDBACK_MAIL,
-      subject: `Новое сообщение от ${name}`,
-      text: `Имя: ${name}\nEmail: ${email}\nСообщение: ${message}`,
-      html: htmlContent,
-    };
+    const emailSubject = subject
+      ? `[${subject}] Новое сообщение от ${name}`
+      : `Новое сообщение от ${name}`;
 
     try {
-      await transporter.sendMail(mailOptions);
+      await transporter.sendMail({
+        from: process.env.NEXT_SMTP_USER,
+        replyTo: email,
+        to: process.env.NEXT_FEEDBACK_MAIL,
+        subject: emailSubject,
+        text: `Тема: ${subject || "—"}\nИмя: ${name}\nEmail: ${email}\nСообщение: ${message}`,
+        html: generateEmailTemplate({ subject, name, email, message }),
+      });
     } catch (emailError) {
       console.error("Ошибка отправки почты:", emailError);
       return NextResponse.json(
@@ -102,15 +71,7 @@ export async function POST(request) {
       );
     }
 
-    return NextResponse.json(
-      { message: "Сообщение успешно отправлено" },
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    return NextResponse.json({ message: "Сообщение успешно отправлено" });
   } catch (error) {
     console.error("Общая ошибка:", error);
     return NextResponse.json(
@@ -120,7 +81,7 @@ export async function POST(request) {
   }
 }
 
-function generateEmailTemplate({ name, email, message }) {
+function generateEmailTemplate({ subject, name, email, message }) {
   return `
     <!DOCTYPE html>
     <html>
@@ -132,16 +93,20 @@ function generateEmailTemplate({ name, email, message }) {
         <div style="max-width: 600px; margin: 20px auto; padding: 30px; background-color: #ffffff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #FFD700; font-size: 24px; margin: 0; padding-bottom: 15px; border-bottom: 3px solid #FFD700;">
-              Сообщение с формы обратной связи -- GoldGames
+              Сообщение с формы обратной связи — GoldGames
             </h1>
           </div>
           <div style="margin: 20px 0;">
+            ${subject ? `<p style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin: 10px 0;">
+              <strong style="color: #FFD700;">Тема:</strong>
+              <span style="color: #333;">${subject}</span>
+            </p>` : ""}
             <p style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin: 10px 0;">
-              <strong style="color: #FFD700;">Имя:</strong> 
+              <strong style="color: #FFD700;">Имя:</strong>
               <span style="color: #333;">${name}</span>
             </p>
             <p style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin: 10px 0;">
-              <strong style="color: #FFD700;">Email:</strong> 
+              <strong style="color: #FFD700;">Email:</strong>
               <span style="color: #333;">${email}</span>
             </p>
             <p style="color: #FFD700; font-weight: bold; margin-top: 20px;">Сообщение:</p>

@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { navigationConfig } from "../config/navigationConfig";
 import Logo from "./Logo";
 import IconButtons from "./IconButtons/index";

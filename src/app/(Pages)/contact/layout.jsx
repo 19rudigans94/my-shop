@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { navigationConfig } from "./config/navigationConfig";
+import { Info, MessageSquare, FileText, ScrollText } from "lucide-react";
+
+const tabs = [
+  { href: "/contact", text: "О нас", Icon: Info },
+  { href: "/contact/feedback", text: "Обратная связь", Icon: MessageSquare },
+  { href: "/contact/agreement", text: "Пользовательское соглашение", Icon: FileText },
+  { href: "/contact/offer", text: "Договор оферты", Icon: ScrollText },
+];
 
 export default function ContactLayout({ children }) {
   const pathname = usePathname();
@@ -13,24 +20,26 @@ export default function ContactLayout({ children }) {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
           Контакты
         </h1>
-        <nav className="border-b border-gray-200 dark:border-gray-700">
-          <ul className="flex space-x-8">
-            {navigationConfig.map((link) => {
+        <nav className="border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+          <ul className="flex min-w-max">
+            {tabs.map(({ href, text, Icon }) => {
               const isActive =
-                (link.href === "/contact" && pathname === "/contact") ||
-                (link.href !== "/contact" && pathname.startsWith(link.href));
+                href === "/contact"
+                  ? pathname === "/contact"
+                  : pathname.startsWith(href);
 
               return (
-                <li key={link.href}>
+                <li key={href}>
                   <Link
-                    href={link.href}
-                    className={`inline-flex items-center px-1 py-4 border-b-2 text-sm font-medium transition-colors ${
+                    href={href}
+                    className={`inline-flex items-center gap-1.5 px-4 py-4 border-b-2 text-sm font-medium transition-colors whitespace-nowrap ${
                       isActive
-                        ? "border-yellow-500 text-yellow-500"
+                        ? "border-yellow-500 text-yellow-600 dark:text-yellow-400"
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                     }`}
                   >
-                    {link.text}
+                    <Icon size={15} />
+                    {text}
                   </Link>
                 </li>
               );
@@ -38,7 +47,7 @@ export default function ContactLayout({ children }) {
           </ul>
         </nav>
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-16">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 md:p-8 mb-16">
         {children}
       </div>
     </div>

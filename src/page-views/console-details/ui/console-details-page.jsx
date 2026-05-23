@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import Image from "next/image";
+import { useFetchItem } from "@/shared/lib/hooks/use-fetch-item";
+import ProductHero from "@/shared/ui/product-hero";
+import Breadcrumbs from "@/shared/ui/breadcrumbs";
 import VideoPlayer from "@/shared/ui/video-player";
 import AddToCartButton from "@/features/cart/ui/add-to-cart-button";
 import LoadingSpinner from "@/shared/ui/loading-spinner";
@@ -10,52 +12,21 @@ import ErrorDisplay from "@/shared/ui/error-display";
 
 export default function ConsoleDetailsPage() {
   const params = useParams();
-  const [console, setConsole] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    const fetchConsole = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        if (!params.slug) {
-          throw new Error("Не указан slug консоли");
-        }
-
-        const response = await fetch(`/api/consoles/${params.slug}`);
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          throw new Error(data?.error || "Ошибка загрузки консоли");
-        }
-
-        if (!data.console) {
-          throw new Error("Консоль не найдена");
-        }
-
-        setConsole(data.console);
-      } catch (err) {
-        console.error("Ошибка при загрузке консоли:", err);
-        setError(err?.message || "Произошла ошибка при загрузке консоли");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchConsole();
-  }, [params.slug]);
+  const { item: consoleItem, loading, error } = useFetchItem(
+    params.slug ? `/api/consoles/${params.slug}` : null,
+    "console"
+  );
 
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorDisplay error={error} />;
 
-  if (!console) {
+  if (!consoleItem) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-gray-500">Консоль не найдена</div>
@@ -63,95 +34,89 @@ export default function ConsoleDetailsPage() {
     );
   }
 
-  return (
-    <div
-      className="min-h-screen bg-gray-50 dark:bg-gray-900"
-      suppressHydrationWarning
-    >
-      {/* Верхний баннер с изображением */}
-      <div className="relative w-full h-[50vh] md:h-[60vh] lg:h-[70vh]">
-        <div className="absolute inset-0">
-          <Image
-            src={console.image}
-            alt={console.title}
-            placeholder="blur"
-            blurDataURL={console.image}
-            fill
-            className="object-cover brightness-50"
-            sizes="100vw"
-            priority
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 lg:p-12">
-          <div className="container mx-auto">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
-              {console.title}
-            </h1>
-            <div className="flex flex-wrap gap-2 mb-4">
-              <span className="px-3 py-1 bg-gray-800/80 text-white rounded-full text-sm">
-                {console.state ? "Новый" : "Б/у"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+  const breadcrumbs = [
+    { label: "Главная", href: "/" },
+    { label: "Консоли", href: "/consoles" },
+    { label: consoleItem.title },
+  ];
 
-      {/* Основной контент */}
-      <div className="container mx-auto px-4 py-8 -mt-8 relative z-10">
+  const badges = [consoleItem.state ? "Новый" : "Б/у"];
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" suppressHydrationWarning>
+      <ProductHero image={consoleItem.image} title={consoleItem.title} badges={badges} />
+
+      <Breadcrumbs items={breadcrumbs} />
+
+      <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Левая колонка с описанием и характеристиками */}
+          {/* Левая колонка */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Описание */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+              <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
+                Описание
+              </h2>
               <p className="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">
-                {console.description}
+                {consoleItem.description}
               </p>
             </div>
 
-            {/* Характеристики */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+              <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
+                Характеристики
+              </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                     Состояние
                   </h3>
                   <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-sm">
-                    {console.state ? "Новый" : "Б/у"}
+                    {consoleItem.state ? "Новый" : "Б/у"}
                   </span>
                 </div>
-
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                    Наличие
+                  </h3>
+                  {consoleItem.stock > 0 ? (
+                    <span className="text-green-600 dark:text-green-400">
+                      В наличии ({consoleItem.stock} шт.)
+                    </span>
+                  ) : (
+                    <span className="text-red-600 dark:text-red-400">
+                      Нет в наличии
+                    </span>
+                  )}
+                </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                     Артикул
                   </h3>
-                  <p className="text-gray-800 dark:text-gray-200">
-                    {console._id}
-                  </p>
+                  <p className="text-gray-800 dark:text-gray-200">{consoleItem._id}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Правая колонка с видео и ценами */}
+          {/* Правая колонка */}
           <div className="lg:col-span-1 space-y-8">
-            {/* Видео */}
-            <VideoPlayer
-              url={console.youtubeUrl}
-              title={`${console.title} - обзор`}
-            />
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+              <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
+                Обзор
+              </h2>
+              <VideoPlayer url={consoleItem.youtubeUrl} title={`${consoleItem.title} — обзор`} />
+            </div>
 
-            {/* Цены */}
             <div className="sticky top-8">
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-                <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+                <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
                   Цена
                 </h2>
                 <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {console.price.toLocaleString()} ₸
+                  {consoleItem.price.toLocaleString()} ₸
                 </div>
                 {mounted && (
-                  <AddToCartButton item={console} className="w-full mt-4" />
+                  <AddToCartButton item={consoleItem} className="w-full mt-4" />
                 )}
               </div>
             </div>
