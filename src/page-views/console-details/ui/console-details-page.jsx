@@ -67,7 +67,7 @@ export default function ConsoleDetailsPage() {
         <div className="text-3xl font-bold text-gray-900 dark:text-white">
           {consoleItem.price.toLocaleString()} ₸
         </div>
-        {mounted && <AddToCartButton item={consoleItem} className="w-full mt-4" />}
+        {mounted && <AddToCartButton item={consoleItem} type="console" className="w-full mt-4" />}
       </div>
     </div>
   );

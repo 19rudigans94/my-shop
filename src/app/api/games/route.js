@@ -17,16 +17,4 @@ export async function GET() {
   }
 }
 
-export async function POST(request) {
-  try {
-    await connectDB();
-    const data = await request.json();
-    const game = await Game.create(data);
-    return NextResponse.json({ success: true, game }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, error: "Ошибка при создании игры" },
-      { status: 500 }
-    );
-  }
-}
+// Создание игр только через /api/protected/games (требует авторизации)

@@ -3,24 +3,24 @@
 import { useState, useEffect } from "react";
 import useCartStore from "@/features/cart/model/store";
 
-export default function AddToCartButton({ item, className = "" }) {
-  // Хуки должны вызываться в начале компонента, не в условных блоках
+export default function AddToCartButton({ item, type, className = "" }) {
   const { addItem } = useCartStore();
   const [isAdding, setIsAdding] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Обновляем состояние только на клиенте после монтирования
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  const outOfStock = mounted && item && typeof item.stock === "number" && item.stock <= 0;
+
   const handleAddToCart = () => {
-    if (!item) return;
+    if (!item || outOfStock) return;
 
     setIsAdding(true);
-    addItem(item);
+    // БАГ A FIX: мержим type проп чтобы консоли/аксессуары не уходили как type:"game"
+    addItem(type ? { ...item, type } : item);
 
-    // Анимация добавления в корзину
     setTimeout(() => {
       setIsAdding(false);
     }, 500);
@@ -29,8 +29,12 @@ export default function AddToCartButton({ item, className = "" }) {
   return (
     <button
       onClick={handleAddToCart}
-      disabled={isAdding || !mounted || !item}
-      className={`px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      disabled={isAdding || !mounted || !item || outOfStock}
+      className={`px-6 py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+        outOfStock
+          ? "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+          : "bg-indigo-600 text-white hover:bg-indigo-700"
+      } ${className}`}
       suppressHydrationWarning
     >
       {isAdding ? (
@@ -57,6 +61,8 @@ export default function AddToCartButton({ item, className = "" }) {
           </svg>
           Добавление...
         </span>
+      ) : outOfStock ? (
+        "Нет в наличии"
       ) : (
         "Добавить в корзину"
       )}

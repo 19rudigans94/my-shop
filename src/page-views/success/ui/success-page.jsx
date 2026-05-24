@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import useCartStore from "@/features/cart/model/store";
 
 export default function SuccessPage() {
   const [mounted, setMounted] = useState(false);
+  const clearCart = useCartStore((state) => state.clearCart);
 
   useEffect(() => {
     setMounted(true);
+    clearCart();
   }, []);
 
   return (
@@ -141,7 +144,8 @@ export default function SuccessPage() {
             <Link
               href="/"
               className="
-                block w-full 
+                block w-full
+                bg-gradient-to-r from-yellow-400 to-yellow-500
                 hover:from-yellow-500 hover:to-yellow-600
                 text-white font-semibold py-2 px-4 rounded-lg text-sm
                 transition-all duration-200 transform hover:scale-105 hover:shadow-lg

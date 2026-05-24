@@ -18,6 +18,7 @@ export default function AdminKeysPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [credentialModalData, setCredentialModalData] = useState({ login: "", password: "" });
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, message: "", onConfirm: null });
+  const [diskFields, setDiskFields] = useState({ newStock: 0, newPrice: 0, usedStock: 0, usedPrice: 0 });
   const { toast } = useToast();
 
   const fetchDisksData = async () => {
@@ -189,6 +190,12 @@ export default function AdminKeysPage() {
 
   const openDiskModal = (data) => {
     setModalData(data);
+    setDiskFields({
+      newStock: data.newStock,
+      newPrice: data.newPrice,
+      usedStock: data.usedStock,
+      usedPrice: data.usedPrice,
+    });
     setIsModalOpen(true);
   };
 
@@ -427,8 +434,8 @@ export default function AdminKeysPage() {
                     <label className="text-xs text-gray-500 dark:text-gray-400">Количество</label>
                     <input
                       type="number"
-                      defaultValue={modalData.newStock}
-                      onChange={(e) => (modalData.newStock = parseInt(e.target.value))}
+                      value={diskFields.newStock}
+                      onChange={(e) => setDiskFields((f) => ({ ...f, newStock: parseInt(e.target.value) || 0 }))}
                       className="w-full mt-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     />
                   </div>
@@ -436,8 +443,8 @@ export default function AdminKeysPage() {
                     <label className="text-xs text-gray-500 dark:text-gray-400">Цена (₸)</label>
                     <input
                       type="number"
-                      defaultValue={modalData.newPrice}
-                      onChange={(e) => (modalData.newPrice = parseFloat(e.target.value))}
+                      value={diskFields.newPrice}
+                      onChange={(e) => setDiskFields((f) => ({ ...f, newPrice: parseFloat(e.target.value) || 0 }))}
                       className="w-full mt-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     />
                   </div>
@@ -450,8 +457,8 @@ export default function AdminKeysPage() {
                     <label className="text-xs text-gray-500 dark:text-gray-400">Количество</label>
                     <input
                       type="number"
-                      defaultValue={modalData.usedStock}
-                      onChange={(e) => (modalData.usedStock = parseInt(e.target.value))}
+                      value={diskFields.usedStock}
+                      onChange={(e) => setDiskFields((f) => ({ ...f, usedStock: parseInt(e.target.value) || 0 }))}
                       className="w-full mt-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     />
                   </div>
@@ -459,8 +466,8 @@ export default function AdminKeysPage() {
                     <label className="text-xs text-gray-500 dark:text-gray-400">Цена (₸)</label>
                     <input
                       type="number"
-                      defaultValue={modalData.usedPrice}
-                      onChange={(e) => (modalData.usedPrice = parseFloat(e.target.value))}
+                      value={diskFields.usedPrice}
+                      onChange={(e) => setDiskFields((f) => ({ ...f, usedPrice: parseFloat(e.target.value) || 0 }))}
                       className="w-full mt-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     />
                   </div>
@@ -476,8 +483,8 @@ export default function AdminKeysPage() {
               </button>
               <button
                 onClick={() => {
-                  handleUpdate(modalData.diskId, "new", modalData.newPrice, modalData.newStock, modalData.gameId);
-                  handleUpdate(modalData.diskId, "used", modalData.usedPrice, modalData.usedStock, modalData.gameId);
+                  handleUpdate(modalData.diskId, "new", diskFields.newPrice, diskFields.newStock, modalData.gameId);
+                  handleUpdate(modalData.diskId, "used", diskFields.usedPrice, diskFields.usedStock, modalData.gameId);
                 }}
                 className="px-4 py-2 text-sm bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-medium rounded-lg"
               >

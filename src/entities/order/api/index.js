@@ -30,7 +30,10 @@ export async function createOrder(orderData) {
       customerInfo: orderData.customerInfo,
       items: orderData.items.map((item, index) => ({
         productId: item.id || item._id || `temp_${orderId}_${index}`, // Используем временный ID если нет реального
-        productType: item.type || "unknown",
+        // БАГ 1 FIX: игровые позиции хранят тип в variant, а не в type
+        productType: item.type === "game"
+          ? (item.variant === "digital" ? "digital" : "physical")
+          : (item.type || "unknown"),
         name: item.name || item.title || "Неизвестный товар",
         price: item.price || 0,
         quantity: item.quantity || 1,

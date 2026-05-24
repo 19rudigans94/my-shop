@@ -16,10 +16,11 @@ export async function updateInventoryAfterPurchase(items) {
     const digitalCredentials = [];
 
     const updatePromises = items.map(async (item) => {
-      const { id, type, quantity, platform, condition } = item;
+      // БАГ 1 FIX: добавлен variant для корректной маршрутизации игровых позиций
+      const { id, type, quantity, platform, condition, variant } = item;
 
       console.log(
-        `Обновление инвентаря: ${id}, тип: ${type}, количество: ${quantity}`
+        `Обновление инвентаря: ${id}, тип: ${type}, variant: ${variant}, количество: ${quantity}`
       );
 
       switch (type) {
@@ -29,12 +30,29 @@ export async function updateInventoryAfterPurchase(items) {
         case "accessory":
           return await updateAccessoryStock(id, quantity);
 
+        // БАГ 1 FIX: cart items для игр имеют type:"game" и variant:"physical"|"digital"
+        case "game": {
+          if (variant === "digital") {
+            const result = await updateDigitalCopyStock(id, quantity);
+            if (result.success && result.credentials.length > 0) {
+              digitalCredentials.push({
+                name: item.title || item.name || "Игра",
+                platform,
+                credentials: result.credentials,
+              });
+            }
+            return result.success;
+          }
+          return await updatePhysicalDiskStock(id, platform, condition, quantity);
+        }
+
+        // DB-восстановленные заказы (после фикса createOrder) имеют productType:"digital"/"physical"
         case "digital": {
           const result = await updateDigitalCopyStock(id, quantity);
           if (result.success && result.credentials.length > 0) {
             digitalCredentials.push({
               name: item.title || item.name || "Игра",
-              platform: item.platform,
+              platform,
               credentials: result.credentials,
             });
           }
@@ -66,21 +84,19 @@ export async function updateInventoryAfterPurchase(items) {
   }
 }
 
+// БАГ D FIX: атомарное списание через findOneAndUpdate — исключает race condition
 async function updateConsoleStock(consoleId, purchasedQuantity) {
   try {
-    const item = await Console.findById(consoleId);
-    if (!item) {
-      console.error(`Консоль ${consoleId} не найдена`);
+    const result = await Console.findOneAndUpdate(
+      { _id: consoleId, stock: { $gte: purchasedQuantity } },
+      { $inc: { stock: -purchasedQuantity }, $set: { updatedAt: new Date() } },
+      { new: true }
+    );
+    if (!result) {
+      console.error(`Консоль ${consoleId} не найдена или недостаточно остатка`);
       return false;
     }
-    if (item.stock < purchasedQuantity) {
-      console.error(`Недостаточно консолей: есть ${item.stock}, нужно ${purchasedQuantity}`);
-      return false;
-    }
-    item.stock -= purchasedQuantity;
-    item.updatedAt = new Date();
-    await item.save();
-    console.log(`✅ Консоль ${item.title}: ${item.stock + purchasedQuantity} → ${item.stock}`);
+    console.log(`✅ Консоль ${result.title}: -${purchasedQuantity}, остаток: ${result.stock}`);
     return true;
   } catch (error) {
     console.error(`Ошибка при обновлении консоли ${consoleId}:`, error);
@@ -88,21 +104,19 @@ async function updateConsoleStock(consoleId, purchasedQuantity) {
   }
 }
 
+// БАГ D FIX: то же для аксессуаров
 async function updateAccessoryStock(accessoryId, purchasedQuantity) {
   try {
-    const item = await Accessory.findById(accessoryId);
-    if (!item) {
-      console.error(`Аксессуар ${accessoryId} не найден`);
+    const result = await Accessory.findOneAndUpdate(
+      { _id: accessoryId, stock: { $gte: purchasedQuantity } },
+      { $inc: { stock: -purchasedQuantity }, $set: { updatedAt: new Date() } },
+      { new: true }
+    );
+    if (!result) {
+      console.error(`Аксессуар ${accessoryId} не найден или недостаточно остатка`);
       return false;
     }
-    if (item.stock < purchasedQuantity) {
-      console.error(`Недостаточно аксессуаров: есть ${item.stock}, нужно ${purchasedQuantity}`);
-      return false;
-    }
-    item.stock -= purchasedQuantity;
-    item.updatedAt = new Date();
-    await item.save();
-    console.log(`✅ Аксессуар ${item.title}: ${item.stock + purchasedQuantity} → ${item.stock}`);
+    console.log(`✅ Аксессуар ${result.title}: -${purchasedQuantity}, остаток: ${result.stock}`);
     return true;
   } catch (error) {
     console.error(`Ошибка при обновлении аксессуара ${accessoryId}:`, error);

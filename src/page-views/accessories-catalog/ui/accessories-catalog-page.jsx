@@ -60,16 +60,16 @@ export default function AccessoriesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {accessories.map((accessory) => (
-            <AccessoryCard
-              key={accessory._id}
-              accessory={accessory}
-              onClick={() => router.push(`/accessories/${accessory.slug}`)}
-            />
-          ))}
-        </div>
-      );
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {accessories.map((accessory) => (
+          <AccessoryCard
+            key={accessory._id}
+            accessory={accessory}
+            onClick={() => router.push(`/accessories/${accessory.slug}`)}
+          />
+        ))}
+      </div>
+
       {pagination.totalPages > 1 && (
         <div className="mt-8 flex justify-center gap-2">
           {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(

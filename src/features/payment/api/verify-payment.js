@@ -5,6 +5,7 @@ import {
   markEmailAsSent,
   markInventoryAsUpdated,
   getOrderByPaylinkProductId,
+  getOrderById,
 } from "@/entities/order/api";
 import {
   sendCustomerPaymentConfirmation,
@@ -34,6 +35,12 @@ export async function handlePaymentVerification(request) {
         const order = await getOrderByPaylinkProductId(uid);
         if (order) {
           console.log(`📦 Найден заказ в БД: ${order.orderId}`);
+
+          // Защита от повторных callback (replay protection)
+          if (order.paymentStatus !== "pending") {
+            console.warn(`⚠️ Повторный callback для заказа ${order.orderId}, статус: ${order.paymentStatus}. Игнорируем.`);
+            return NextResponse.redirect(new URL("/success", request.url));
+          }
 
           await markOrderAsPaid(order.orderId, { uid, token });
 

@@ -67,7 +67,7 @@ export default function AccessoryDetailsPage() {
         <div className="text-3xl font-bold text-gray-900 dark:text-white">
           {accessory.price.toLocaleString()} ₸
         </div>
-        {mounted && <AddToCartButton item={accessory} className="w-full mt-4" />}
+        {mounted && <AddToCartButton item={accessory} type="accessory" className="w-full mt-4" />}
       </div>
     </div>
   );

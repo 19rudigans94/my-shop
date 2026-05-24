@@ -17,16 +17,4 @@ export async function GET() {
   }
 }
 
-export async function POST(request) {
-  try {
-    await connectDB();
-    const data = await request.json();
-    const newConsole = await Console.create(data);
-    return NextResponse.json({ success: true, console: newConsole }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, error: "Ошибка при создании консоли" },
-      { status: 500 }
-    );
-  }
-}
+// Создание консолей только через /api/protected/consoles (требует авторизации)

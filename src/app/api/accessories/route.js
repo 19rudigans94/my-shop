@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/shared/lib/db/mongodb";
 import Accessory from "@/entities/accessory/model/schema";
-import { generateSlug } from "@/shared/lib/slug";
 
 export const dynamic = 'force-dynamic';
+
+// Разрешённые ключи фильтрации — защита от NoSQL injection
+const ALLOWED_FILTERS = ["platform"];
 
 export async function GET(request) {
   try {
@@ -12,16 +14,15 @@ export async function GET(request) {
       throw new Error("Ошибка подключения к базе данных");
     }
 
-    // Получаем параметры запроса
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page")) || 1;
     const limit = parseInt(searchParams.get("limit")) || 12;
     const skip = (page - 1) * limit;
 
-    // Формируем объект фильтров
+    // БАГ 3 FIX: только разрешённые ключи фильтрации (защита от NoSQL injection)
     const filters = {};
     for (const [key, value] of searchParams.entries()) {
-      if (key !== "page" && key !== "limit" && value && value !== "all") {
+      if (ALLOWED_FILTERS.includes(key) && value && value !== "all") {
         filters[key] = value;
       }
     }
@@ -60,66 +61,4 @@ export async function GET(request) {
   }
 }
 
-export async function POST(request) {
-  try {
-    const connection = await connectDB();
-    if (!connection) {
-      throw new Error("Ошибка подключения к базе данных");
-    }
-
-    const data = await request.json();
-
-    // Проверяем обязательные поля
-    if (
-      !data.title ||
-      !data.platform ||
-      !data.price ||
-      !data.description ||
-      !data.images?.length ||
-      typeof data.stock === "undefined"
-    ) {
-      throw new Error("Не все обязательные поля заполнены");
-    }
-
-    // Преобразуем stock в число, если оно передано как строка
-    if (typeof data.stock === "string") {
-      data.stock = parseInt(data.stock, 10);
-    }
-
-    // Генерируем слаг из названия
-    let slug = generateSlug(data.title);
-
-    // Проверяем, существует ли уже аксессуар с таким слагом
-    let existingAccessory = await Accessory.findOne({ slug });
-    let counter = 1;
-
-    // Если слаг уже существует, добавляем к нему число
-    while (existingAccessory) {
-      slug = `${generateSlug(data.title)}-${counter}`;
-      existingAccessory = await Accessory.findOne({ slug });
-      counter++;
-    }
-
-    // Добавляем слаг в данные
-    data.slug = slug;
-
-    const accessory = await Accessory.create(data);
-
-    return NextResponse.json(
-      {
-        success: true,
-        accessory,
-      },
-      { status: 201 }
-    );
-  } catch (error) {
-    console.error("Ошибка при создании аксессуара:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message || "Ошибка при создании аксессуара",
-      },
-      { status: 500 }
-    );
-  }
-}
+// Создание аксессуаров только через /api/protected/accessories (требует авторизации)
