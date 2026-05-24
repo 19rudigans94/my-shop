@@ -60,7 +60,6 @@ export default function AccessoriesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {accessories.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {accessories.map((accessory) => (
             <AccessoryCard
@@ -70,12 +69,7 @@ export default function AccessoriesPage() {
             />
           ))}
         </div>
-      ) : (
-        <div className="text-center py-12 text-gray-500">
-          Аксессуары не найдены
-        </div>
-      )}
-
+      );
       {pagination.totalPages > 1 && (
         <div className="mt-8 flex justify-center gap-2">
           {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(

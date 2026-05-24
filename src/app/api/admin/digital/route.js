@@ -1,5 +1,6 @@
 import connectDB from "@/shared/lib/db/mongodb";
 import { ObjectId } from "mongodb";
+import { encryptCredential, decryptCredential, isEncryptionAvailable } from "@/shared/lib/crypto";
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +32,11 @@ export async function GET() {
           platform: set.platform,
           price: set.price,
           isActive: set.isActive,
-          credentials: set.credentials || [],
+          credentials: (set.credentials || []).map((c) => ({
+            ...c,
+            login: decryptCredential(c.login),
+            password: decryptCredential(c.password),
+          })),
           totalCredentials: set.credentials ? set.credentials.length : 0,
           activeCredentials: set.credentials
             ? set.credentials.filter((c) => c.isActive).length
@@ -127,12 +132,12 @@ export async function POST(request) {
           updatedAt: new Date(),
         };
 
-        // Если предоставлены учетные данные, добавляем их
+        // Если предоставлены учетные данные, добавляем их (шифруем если возможно)
         if (credential?.login && credential?.password) {
           newSet.credentials.push({
             _id: new ObjectId(),
-            login: credential.login,
-            password: credential.password,
+            login: isEncryptionAvailable() ? encryptCredential(credential.login) : credential.login,
+            password: isEncryptionAvailable() ? encryptCredential(credential.password) : credential.password,
             isActive: true,
             createdAt: new Date(),
           });
@@ -248,8 +253,8 @@ export async function POST(request) {
 
         const newCredential = {
           _id: new ObjectId(),
-          login: credential.login,
-          password: credential.password,
+          login: isEncryptionAvailable() ? encryptCredential(credential.login) : credential.login,
+          password: isEncryptionAvailable() ? encryptCredential(credential.password) : credential.password,
           isActive: true,
           createdAt: new Date(),
         };

@@ -83,8 +83,10 @@ export default function PriceList() {
   const handleAddToCart = () => {
     if (!selectedVariant) return;
 
+    // БАГ 2 FIX: используем gameId из prices API, а не selectedVariant._id (который undefined)
+    const currentPlatformData = prices.find((p) => p.platform === selectedPlatform);
     const item = {
-      _id: selectedVariant._id,
+      _id: currentPlatformData?.gameId,
       title: params.slug,
       price: selectedVariant.price,
       platform: selectedPlatform,
@@ -279,12 +281,18 @@ export default function PriceList() {
                         </div>
                       </div>
                     </div>
+                    {/* БАГ 4 FIX: кнопка неактивна при нулевом остатке */}
                     <button
                       onClick={() => handleAddDigitalToCart(copy)}
-                      className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white py-2 px-4 rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all duration-300 font-medium flex items-center justify-center gap-2 text-sm"
+                      disabled={copy.totalAvailable === 0}
+                      className={`w-full py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2 text-sm transition-all duration-300 ${
+                        copy.totalAvailable === 0
+                          ? "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
+                          : "bg-gradient-to-r from-amber-500 to-yellow-500 text-white hover:from-amber-600 hover:to-yellow-600"
+                      }`}
                     >
                       <ShoppingCart className="w-4 h-4" />
-                      <span>Купить копию</span>
+                      <span>{copy.totalAvailable === 0 ? "Нет в наличии" : "Купить копию"}</span>
                     </button>
                   </div>
                 ))}

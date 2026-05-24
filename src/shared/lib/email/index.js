@@ -74,8 +74,51 @@ function createItemsTable(items, totalAmount) {
   `;
 }
 
+function createDigitalCredentialsBlock(digitalCredentials) {
+  if (!digitalCredentials || digitalCredentials.length === 0) return "";
+
+  const groups = digitalCredentials
+    .map(
+      (group) => `
+      <div style="margin-bottom: 20px;">
+        <div style="font-weight: bold; color: #333; margin-bottom: 8px;">
+          🎮 ${group.name}${group.platform ? ` (${group.platform})` : ""}
+        </div>
+        ${group.credentials
+          .map(
+            (cred, i) => `
+          <div style="background-color: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 12px; margin-bottom: 8px;">
+            ${group.credentials.length > 1 ? `<div style="font-size: 12px; color: #888; margin-bottom: 6px;">Аккаунт ${i + 1}</div>` : ""}
+            <div style="margin-bottom: 4px;">
+              <span style="color: #555; font-size: 13px;">Логин:</span>
+              <span style="font-family: monospace; font-size: 14px; font-weight: bold; color: #333; margin-left: 8px;">${cred.login}</span>
+            </div>
+            <div>
+              <span style="color: #555; font-size: 13px;">Пароль:</span>
+              <span style="font-family: monospace; font-size: 14px; font-weight: bold; color: #333; margin-left: 8px;">${cred.password}</span>
+            </div>
+          </div>
+        `
+          )
+          .join("")}
+      </div>
+    `
+    )
+    .join("");
+
+  return `
+    <div style="background-color: #e8f5e9; border: 2px solid #4caf50; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+      <h3 style="color: #2e7d32; margin: 0 0 15px 0; font-size: 18px;">🔑 Данные для доступа к цифровым играм</h3>
+      <p style="color: #555; font-size: 13px; margin: 0 0 15px 0;">
+        Сохраните эти данные. Перейдите в магазин платформы и войдите в аккаунт, затем активируйте игру в библиотеке.
+      </p>
+      ${groups}
+    </div>
+  `;
+}
+
 // Отправка письма покупателю с подтверждением успешной оплаты
-export async function sendCustomerPaymentConfirmation(orderData) {
+export async function sendCustomerPaymentConfirmation(orderData, digitalCredentials = []) {
   try {
     console.log(
       `📧 Начинаем отправку email покупателю для заказа ${orderData.orderId}`
@@ -102,6 +145,7 @@ export async function sendCustomerPaymentConfirmation(orderData) {
     }
 
     const itemsTable = createItemsTable(items, totalAmount);
+    const credentialsBlock = createDigitalCredentialsBlock(digitalCredentials);
 
     const mailOptions = {
       from: `GoldGames <${process.env.NEXT_FEEDBACK_MAIL}>`,
@@ -114,16 +158,18 @@ export async function sendCustomerPaymentConfirmation(orderData) {
             <h1 style="color: #28a745; margin: 0; font-size: 28px;">✅ Оплата успешна!</h1>
             <p style="color: #666; font-size: 16px; margin: 10px 0 0 0;">Заказ #${orderId}</p>
           </div>
-          
+
           <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 15px; margin-bottom: 25px;">
             <p style="color: #155724; margin: 0; font-weight: bold;">
               🎉 Спасибо за покупку! Ваша оплата прошла успешно.
             </p>
           </div>
-          
+
+          ${credentialsBlock}
+
           <h3 style="color: #333; margin-bottom: 15px;">📦 Детали заказа:</h3>
           ${itemsTable}
-          
+
           <h3 style="color: #333; margin: 30px 0 15px 0;">👤 Контактная информация:</h3>
           <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
             <p style="color: #666; margin: 5px 0;">
@@ -133,13 +179,7 @@ export async function sendCustomerPaymentConfirmation(orderData) {
               <strong>Телефон:</strong> ${customerInfo.phoneNumber}
             </p>
           </div>
-          
-          <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin-bottom: 25px;">
-            <p style="color: #856404; margin: 0;">
-              <strong>📧 Важно:</strong> Данные для доступа к цифровым товарам будут отправлены в течение 5-15 минут.
-            </p>
-          </div>
-          
+
           <div style="text-align: center; margin-top: 30px;">
             <p style="color: #666; font-size: 14px;">
               При возникновении вопросов обращайтесь: <a href="mailto:info@goldgames.kz" style="color: #007bff;">info@goldgames.kz</a>

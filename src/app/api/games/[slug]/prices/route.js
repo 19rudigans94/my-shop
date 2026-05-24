@@ -33,6 +33,7 @@ export async function GET(request, context) {
 
     // Форматируем данные для ответа
     const prices = physicalDisks.map((disk) => ({
+      gameId: disk.gameId.toString(),
       platform: disk.platform,
       variants: disk.variants.map((variant) => ({
         condition: variant.condition,

@@ -19,19 +19,17 @@ export async function handlePaymentVerification(request) {
   const token = searchParams.get("token");
 
   console.log(
-    `🔔 Получен callback от PayLink: status=${status}, uid=${uid}, token=${token}`
+    `🔔 Callback от PayLink: status=${status}, uid=${uid}, token=${token}`
   );
 
   if (status === "successful") {
-    console.log(`✅ Оплата прошла успешно. UID: ${uid}, Token: ${token}`);
+    console.log(`✅ Оплата успешна. UID: ${uid}`);
 
     try {
       let orderData = getStoredOrderData(uid);
 
       if (!orderData) {
-        console.warn(
-          `⚠️ Данные заказа для UID ${uid} не найдены в памяти, ищем в БД...`
-        );
+        console.warn(`⚠️ Данные заказа ${uid} не в памяти, ищем в БД...`);
 
         const order = await getOrderByPaylinkProductId(uid);
         if (order) {
@@ -42,11 +40,13 @@ export async function handlePaymentVerification(request) {
           orderData = {
             customerInfo: order.customerInfo,
             items: order.items.map((item) => ({
+              id: item.productId,
               title: item.name,
               price: item.price,
               quantity: item.quantity,
               platform: item.platform,
               condition: item.condition,
+              type: item.productType,
             })),
             totalPrice: order.totalAmount,
             totalItems: order.totalItems,
@@ -56,13 +56,25 @@ export async function handlePaymentVerification(request) {
           return NextResponse.redirect(new URL("/success", request.url));
         }
       } else {
-        console.log(`📦 Найдены данные заказа в памяти для UID ${uid}`);
+        console.log(`📦 Данные заказа ${uid} найдены в памяти`);
 
         const order = await markOrderAsPaid(uid, { uid, token });
         if (!order) {
           console.error(`❌ Не удалось обновить заказ ${uid}`);
           return NextResponse.redirect(new URL("/success", request.url));
         }
+      }
+
+      // БАГ 1 FIX: сначала обновляем инвентарь и получаем credentials,
+      // только потом отправляем email — иначе credentials ещё не деактивированы.
+      const { allSuccessful: inventoryOk, digitalCredentials } =
+        await updateInventoryAfterPurchase(orderData.items);
+
+      if (inventoryOk) {
+        await markInventoryAsUpdated(uid);
+        console.log(`✅ Инвентарь обновлён для заказа ${uid}`);
+      } else {
+        console.error(`❌ Не удалось обновить инвентарь для заказа ${uid}`);
       }
 
       const emailData = {
@@ -72,13 +84,10 @@ export async function handlePaymentVerification(request) {
         orderId: uid,
       };
 
-      const operations = await Promise.allSettled([
-        sendCustomerPaymentConfirmation(emailData),
+      const [customerEmailResult, storeEmailResult] = await Promise.allSettled([
+        sendCustomerPaymentConfirmation(emailData, digitalCredentials),
         sendStoreOrderNotification(emailData),
-        updateInventoryAfterPurchase(orderData.items),
       ]);
-
-      const [customerEmailResult, storeEmailResult, inventoryResult] = operations;
 
       if (customerEmailResult.status === "fulfilled" && customerEmailResult.value) {
         await markEmailAsSent(uid, "customer");
@@ -100,21 +109,14 @@ export async function handlePaymentVerification(request) {
         });
       }
 
-      if (inventoryResult.status === "fulfilled" && inventoryResult.value) {
-        await markInventoryAsUpdated(uid);
-        console.log(`✅ Инвентарь обновлен для заказа ${uid}`);
-      } else {
-        console.error(`❌ Не удалось обновить инвентарь для заказа ${uid}:`, inventoryResult.reason);
-      }
-
       console.log(`🎉 Заказ ${uid} успешно обработан`);
     } catch (error) {
-      console.error(`💥 Ошибка при обработке успешной оплаты для UID ${uid}:`, error);
+      console.error(`💥 Ошибка при обработке оплаты ${uid}:`, error);
     }
 
     return NextResponse.redirect(new URL("/success", request.url));
   }
 
-  console.log(`❌ Оплата не прошла. UID: ${uid}, Token: ${token}`);
+  console.log(`❌ Оплата не прошла. UID: ${uid}`);
   return NextResponse.redirect(new URL("/cart", request.url));
 }
