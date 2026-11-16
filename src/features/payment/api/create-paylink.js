@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getTimePlus30Minutes } from "@/shared/lib/time";
-import { createOrder, storeOrderDataForProcessing } from "@/entities/order/api";
+import { createOrder } from "@/entities/order/api";
 
 export async function handleCreatePayLink(request) {
   const expired_at = getTimePlus30Minutes();
@@ -132,16 +132,23 @@ export async function handleCreatePayLink(request) {
       );
     }
 
+    // Заказ хранится только в MongoDB. Если сохранить его не удалось,
+    // не отдаём ссылку на оплату: иначе покупатель заплатит за заказ,
+    // о котором сервер ничего не знает.
     try {
-      const orderDataWithPayLink = {
+      await createOrder({
         ...cartData,
         paylinkProductId: result.id,
-      };
-      const orderId = await createOrder(orderDataWithPayLink);
-      storeOrderDataForProcessing(result.id, cartData);
+      });
     } catch (dbError) {
       console.error("Ошибка при сохранении заказа в БД:", dbError.message);
-      storeOrderDataForProcessing(result.id, cartData);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Не удалось сохранить заказ. Попробуйте ещё раз.",
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
