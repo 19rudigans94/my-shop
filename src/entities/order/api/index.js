@@ -2,110 +2,111 @@ import connectDB from "@/shared/lib/db/mongodb";
 import Order from "@/entities/order/model/schema";
 
 /**
- * Создает новый заказ в базе данных
- * @param {Object} orderData - Данные заказа
+ * Создает новый заказ в базе данных.
+ * Позиции и суммы должны быть уже пересчитаны на сервере (priceCart),
+ * данные корзины от клиента сюда не передаются.
+ * @param {Object} orderData - { customerInfo, items, totalPrice, totalItems }
  * @returns {Promise<string>} - ID созданного заказа
  */
 export async function createOrder(orderData) {
-  try {
-    console.log("🔌 Подключение к базе данных...");
-    await connectDB();
-    console.log("✅ Успешное подключение к базе данных");
+  await connectDB();
 
-    const orderId = generateOrderId();
-    console.log(`🆔 Сгенерирован ID заказа: ${orderId}`);
+  const orderId = generateOrderId();
 
-    // Логируем данные товаров для отладки
-    console.log("📦 Данные товаров для заказа:");
-    orderData.items.forEach((item, index) => {
-      console.log(
-        `  ${index + 1}. ID: ${item.id || "НЕТ"}, Title: ${
-          item.title || item.name
-        }, Type: ${item.type}`
-      );
-    });
+  const order = new Order({
+    orderId,
+    customerInfo: orderData.customerInfo,
+    items: orderData.items.map((item) => ({
+      productId: item.id,
+      productType: item.productType,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      platform: item.platform,
+      condition: item.condition,
+      total: item.price * item.quantity,
+    })),
+    totalAmount: orderData.totalPrice,
+    totalItems: orderData.totalItems,
+    status: "pending",
+    paymentStatus: "pending",
+    paymentData: {
+      paymentMethod: "paylink",
+    },
+  });
 
-    const order = new Order({
-      orderId,
-      customerInfo: orderData.customerInfo,
-      items: orderData.items.map((item, index) => ({
-        productId: item.id || item._id || `temp_${orderId}_${index}`, // Используем временный ID если нет реального
-        // БАГ 1 FIX: игровые позиции хранят тип в variant, а не в type
-        productType: item.type === "game"
-          ? (item.variant === "digital" ? "digital" : "physical")
-          : (item.type || "unknown"),
-        name: item.name || item.title || "Неизвестный товар",
-        price: item.price || 0,
-        quantity: item.quantity || 1,
-        platform: item.platform,
-        condition: item.condition,
-        total: (item.price || 0) * (item.quantity || 1),
-      })),
-      totalAmount: orderData.totalPrice,
-      totalItems: orderData.totalItems,
-      status: "pending",
-      paymentStatus: "pending",
-      paymentData: {
-        paylinkProductId: orderData.paylinkProductId,
-        paymentMethod: "paylink",
-      },
-    });
+  await order.save();
+  console.log(`✅ Заказ ${orderId} создан на сумму ${orderData.totalPrice} ₸`);
 
-    console.log("💾 Сохранение заказа в базе данных...");
-    await order.save();
-    console.log(`✅ Заказ ${orderId} успешно создан в базе данных`);
+  return orderId;
+}
 
-    return orderId;
-  } catch (error) {
-    console.error("❌ Ошибка при создании заказа:");
-    console.error("- Тип ошибки:", error.name);
-    console.error("- Сообщение:", error.message);
-
-    // Добавляем информацию о типе ошибки
-    if (error.name === "MongooseError" || error.name === "MongoNetworkError") {
-      console.error("🔌 Проблема с подключением к MongoDB");
-    } else if (error.name === "ValidationError") {
-      console.error("📝 Ошибка валидации данных заказа");
+/**
+ * Сохраняет ID продукта PayLink для заказа
+ */
+export async function setOrderPaylinkProductId(orderId, paylinkProductId) {
+  await connectDB();
+  await Order.updateOne(
+    { orderId },
+    {
+      "paymentData.paylinkProductId": paylinkProductId,
+      updatedAt: new Date(),
     }
+  );
+}
 
-    throw error;
+/**
+ * Отменяет заказ, для которого не удалось создать ссылку на оплату
+ */
+export async function cancelPendingOrder(orderId) {
+  try {
+    await connectDB();
+    await Order.updateOne(
+      { orderId, paymentStatus: "pending" },
+      { status: "cancelled", paymentStatus: "failed", updatedAt: new Date() }
+    );
+  } catch (error) {
+    console.error(`Ошибка при отмене заказа ${orderId}:`, error);
   }
 }
 
 /**
- * Обновляет статус заказа после успешной оплаты
- * @param {string} orderId - ID заказа
- * @param {Object} paymentData - Данные о платеже
- * @returns {Promise<Object|null>} - Обновленный заказ или null
+ * Атомарно переводит заказ из pending в оплаченный.
+ * Возвращает заказ только тому вызову, который сделал переход,
+ * поэтому повторный или параллельный callback не выдаст ключи второй раз.
+ * @returns {Promise<Object|null>}
  */
-export async function markOrderAsPaid(orderId, paymentData = {}) {
-  try {
-    await connectDB();
+export async function claimOrderPayment(orderId, { uid, token }) {
+  await connectDB();
 
-    const order = await Order.findOne({ orderId });
-    if (!order) {
-      console.error(`Заказ ${orderId} не найден`);
-      return null;
-    }
+  const now = new Date();
+  const update = {
+    status: "paid",
+    paymentStatus: "successful",
+    "paymentData.paylinkUid": uid,
+    "paymentData.paymentMethod": "paylink",
+    processedAt: now,
+    updatedAt: now,
+  };
+  if (token) update["paymentData.paylinkToken"] = token;
 
-    order.status = "paid";
-    order.paymentStatus = "successful";
-    order.paymentData = {
-      paylinkUid: paymentData.uid,
-      paylinkToken: paymentData.token,
-      paymentMethod: "paylink",
-    };
-    order.processedAt = new Date();
-    order.updatedAt = new Date();
+  return Order.findOneAndUpdate(
+    { orderId, paymentStatus: "pending" },
+    { $set: update },
+    { new: true }
+  );
+}
 
-    await order.save();
-    console.log(`✅ Заказ ${orderId} помечен как оплаченный`);
-
-    return order;
-  } catch (error) {
-    console.error(`Ошибка при обновлении заказа ${orderId}:`, error);
-    return null;
-  }
+/**
+ * Проверяет, не использована ли уже транзакция PayLink для другого заказа
+ */
+export async function isPaylinkUidUsed(uid) {
+  await connectDB();
+  const existing = await Order.exists({
+    "paymentData.paylinkUid": uid,
+    paymentStatus: "successful",
+  });
+  return Boolean(existing);
 }
 
 /**
@@ -227,55 +228,6 @@ export async function getOrderByPaylinkProductId(paylinkProductId) {
     );
     return null;
   }
-}
-
-/**
- * Сохраняет данные заказа во временном хранилище для последующей обработки
- * @param {string} orderId - ID заказа
- * @param {Object} orderData - Данные заказа
- */
-export function storeOrderDataForProcessing(orderId, orderData) {
-  // Используем глобальную переменную для временного хранения
-  // В продакшене лучше использовать Redis или другое внешнее хранилище
-  if (!global.pendingOrders) {
-    global.pendingOrders = new Map();
-  }
-
-  global.pendingOrders.set(orderId, {
-    ...orderData,
-    timestamp: Date.now(),
-  });
-
-  console.log(`💾 Данные заказа ${orderId} сохранены для обработки`);
-
-  // Очищаем старые данные (старше 1 часа)
-  const oneHourAgo = Date.now() - 60 * 60 * 1000;
-  for (const [id, data] of global.pendingOrders.entries()) {
-    if (data.timestamp < oneHourAgo) {
-      global.pendingOrders.delete(id);
-      console.log(`🧹 Удалены устаревшие данные заказа ${id}`);
-    }
-  }
-}
-
-/**
- * Получает сохраненные данные заказа
- * @param {string} orderId - ID заказа
- * @returns {Object|null} - Данные заказа или null
- */
-export function getStoredOrderData(orderId) {
-  if (!global.pendingOrders) {
-    return null;
-  }
-
-  const orderData = global.pendingOrders.get(orderId);
-  if (orderData) {
-    // Удаляем данные после получения
-    global.pendingOrders.delete(orderId);
-    console.log(`📦 Получены данные заказа ${orderId} из временного хранилища`);
-  }
-
-  return orderData || null;
 }
 
 /**
