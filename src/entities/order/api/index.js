@@ -91,6 +91,7 @@ export async function markOrderAsPaid(orderId, paymentData = {}) {
     order.status = "paid";
     order.paymentStatus = "successful";
     order.paymentData = {
+      ...(order.paymentData?.toObject?.() ?? order.paymentData ?? {}),
       paylinkUid: paymentData.uid,
       paylinkToken: paymentData.token,
       paymentMethod: "paylink",
@@ -230,52 +231,49 @@ export async function getOrderByPaylinkProductId(paylinkProductId) {
 }
 
 /**
- * Сохраняет данные заказа во временном хранилище для последующей обработки
- * @param {string} orderId - ID заказа
- * @param {Object} orderData - Данные заказа
+ * Атомарно переводит ожидающий заказ в статус "оплачен" по PayLink product ID.
+ * Источник истины — только MongoDB: данные не теряются при рестарте сервера.
+ * Условие paymentStatus: "pending" защищает от повторных и параллельных callback:
+ * заказ может быть "забран" на обработку только один раз.
+ * @param {string} paylinkProductId - PayLink product ID (uid из callback)
+ * @param {Object} paymentData - Данные о платеже ({ uid, token })
+ * @returns {Promise<{ order: Object|null, alreadyProcessed: boolean }>}
  */
-export function storeOrderDataForProcessing(orderId, orderData) {
-  // Используем глобальную переменную для временного хранения
-  // В продакшене лучше использовать Redis или другое внешнее хранилище
-  if (!global.pendingOrders) {
-    global.pendingOrders = new Map();
+export async function claimPendingOrderForPayment(
+  paylinkProductId,
+  paymentData = {}
+) {
+  await connectDB();
+
+  const now = new Date();
+  const order = await Order.findOneAndUpdate(
+    {
+      "paymentData.paylinkProductId": paylinkProductId,
+      paymentStatus: "pending",
+    },
+    {
+      $set: {
+        status: "paid",
+        paymentStatus: "successful",
+        "paymentData.paylinkUid": paymentData.uid,
+        "paymentData.paylinkToken": paymentData.token,
+        "paymentData.paymentMethod": "paylink",
+        processedAt: now,
+        updatedAt: now,
+      },
+    },
+    { new: true }
+  );
+
+  if (order) {
+    console.log(`✅ Заказ ${order.orderId} помечен как оплаченный`);
+    return { order, alreadyProcessed: false };
   }
 
-  global.pendingOrders.set(orderId, {
-    ...orderData,
-    timestamp: Date.now(),
+  const existing = await Order.exists({
+    "paymentData.paylinkProductId": paylinkProductId,
   });
-
-  console.log(`💾 Данные заказа ${orderId} сохранены для обработки`);
-
-  // Очищаем старые данные (старше 1 часа)
-  const oneHourAgo = Date.now() - 60 * 60 * 1000;
-  for (const [id, data] of global.pendingOrders.entries()) {
-    if (data.timestamp < oneHourAgo) {
-      global.pendingOrders.delete(id);
-      console.log(`🧹 Удалены устаревшие данные заказа ${id}`);
-    }
-  }
-}
-
-/**
- * Получает сохраненные данные заказа
- * @param {string} orderId - ID заказа
- * @returns {Object|null} - Данные заказа или null
- */
-export function getStoredOrderData(orderId) {
-  if (!global.pendingOrders) {
-    return null;
-  }
-
-  const orderData = global.pendingOrders.get(orderId);
-  if (orderData) {
-    // Удаляем данные после получения
-    global.pendingOrders.delete(orderId);
-    console.log(`📦 Получены данные заказа ${orderId} из временного хранилища`);
-  }
-
-  return orderData || null;
+  return { order: null, alreadyProcessed: Boolean(existing) };
 }
 
 /**

@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 import {
-  markOrderAsPaid,
-  getStoredOrderData,
+  claimPendingOrderForPayment,
   markEmailAsSent,
   markInventoryAsUpdated,
-  getOrderByPaylinkProductId,
-  getOrderById,
 } from "@/entities/order/api";
 import {
   sendCustomerPaymentConfirmation,
@@ -27,50 +24,39 @@ export async function handlePaymentVerification(request) {
     console.log(`✅ Оплата успешна. UID: ${uid}`);
 
     try {
-      let orderData = getStoredOrderData(uid);
+      // Заказ берём только из MongoDB и атомарно переводим pending -> paid,
+      // чтобы повторный или параллельный callback не обработал его дважды.
+      const { order, alreadyProcessed } = await claimPendingOrderForPayment(
+        uid,
+        { uid, token }
+      );
 
-      if (!orderData) {
-        console.warn(`⚠️ Данные заказа ${uid} не в памяти, ищем в БД...`);
-
-        const order = await getOrderByPaylinkProductId(uid);
-        if (order) {
-          console.log(`📦 Найден заказ в БД: ${order.orderId}`);
-
-          // Защита от повторных callback (replay protection)
-          if (order.paymentStatus !== "pending") {
-            console.warn(`⚠️ Повторный callback для заказа ${order.orderId}, статус: ${order.paymentStatus}. Игнорируем.`);
-            return NextResponse.redirect(new URL("/success", request.url));
-          }
-
-          await markOrderAsPaid(order.orderId, { uid, token });
-
-          orderData = {
-            customerInfo: order.customerInfo,
-            items: order.items.map((item) => ({
-              id: item.productId,
-              title: item.name,
-              price: item.price,
-              quantity: item.quantity,
-              platform: item.platform,
-              condition: item.condition,
-              type: item.productType,
-            })),
-            totalPrice: order.totalAmount,
-            totalItems: order.totalItems,
-          };
+      if (!order) {
+        if (alreadyProcessed) {
+          console.warn(`⚠️ Повторный callback для PayLink ID ${uid}. Игнорируем.`);
         } else {
-          console.error(`❌ Заказ ${uid} не найден ни в памяти, ни в БД`);
-          return NextResponse.redirect(new URL("/success", request.url));
+          console.error(`❌ Заказ с PayLink ID ${uid} не найден в БД`);
         }
-      } else {
-        console.log(`📦 Данные заказа ${uid} найдены в памяти`);
-
-        const order = await markOrderAsPaid(uid, { uid, token });
-        if (!order) {
-          console.error(`❌ Не удалось обновить заказ ${uid}`);
-          return NextResponse.redirect(new URL("/success", request.url));
-        }
+        return NextResponse.redirect(new URL("/success", request.url));
       }
+
+      const orderId = order.orderId;
+      console.log(`📦 Найден заказ в БД: ${orderId}`);
+
+      const orderData = {
+        customerInfo: order.customerInfo,
+        items: order.items.map((item) => ({
+          id: item.productId,
+          title: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          platform: item.platform,
+          condition: item.condition,
+          type: item.productType,
+        })),
+        totalPrice: order.totalAmount,
+        totalItems: order.totalItems,
+      };
 
       // БАГ 1 FIX: сначала обновляем инвентарь и получаем credentials,
       // только потом отправляем email — иначе credentials ещё не деактивированы.
@@ -78,17 +64,17 @@ export async function handlePaymentVerification(request) {
         await updateInventoryAfterPurchase(orderData.items);
 
       if (inventoryOk) {
-        await markInventoryAsUpdated(uid);
-        console.log(`✅ Инвентарь обновлён для заказа ${uid}`);
+        await markInventoryAsUpdated(orderId);
+        console.log(`✅ Инвентарь обновлён для заказа ${orderId}`);
       } else {
-        console.error(`❌ Не удалось обновить инвентарь для заказа ${uid}`);
+        console.error(`❌ Не удалось обновить инвентарь для заказа ${orderId}`);
       }
 
       const emailData = {
         customerInfo: orderData.customerInfo,
         items: orderData.items,
         totalAmount: orderData.totalPrice,
-        orderId: uid,
+        orderId,
       };
 
       const [customerEmailResult, storeEmailResult] = await Promise.allSettled([
@@ -97,26 +83,26 @@ export async function handlePaymentVerification(request) {
       ]);
 
       if (customerEmailResult.status === "fulfilled" && customerEmailResult.value) {
-        await markEmailAsSent(uid, "customer");
-        console.log(`✅ Email покупателю отправлен для заказа ${uid}`);
+        await markEmailAsSent(orderId, "customer");
+        console.log(`✅ Email покупателю отправлен для заказа ${orderId}`);
       } else {
-        console.error(`❌ Не удалось отправить email покупателю для заказа ${uid}:`, {
+        console.error(`❌ Не удалось отправить email покупателю для заказа ${orderId}:`, {
           status: customerEmailResult.status,
           reason: customerEmailResult.reason?.message || customerEmailResult.reason,
         });
       }
 
       if (storeEmailResult.status === "fulfilled" && storeEmailResult.value) {
-        await markEmailAsSent(uid, "store");
-        console.log(`✅ Email в магазин отправлен для заказа ${uid}`);
+        await markEmailAsSent(orderId, "store");
+        console.log(`✅ Email в магазин отправлен для заказа ${orderId}`);
       } else {
-        console.error(`❌ Не удалось отправить email в магазин для заказа ${uid}:`, {
+        console.error(`❌ Не удалось отправить email в магазин для заказа ${orderId}:`, {
           status: storeEmailResult.status,
           reason: storeEmailResult.reason?.message || storeEmailResult.reason,
         });
       }
 
-      console.log(`🎉 Заказ ${uid} успешно обработан`);
+      console.log(`🎉 Заказ ${orderId} успешно обработан`);
     } catch (error) {
       console.error(`💥 Ошибка при обработке оплаты ${uid}:`, error);
     }
