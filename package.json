@@ -7,7 +7,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1053.0",
@@ -32,6 +34,7 @@
     "@types/node": "22.13.10",
     "@types/react": "19.0.12",
     "eslint": "^9.23.0",
-    "eslint-config-next": "15.2.3"
+    "eslint-config-next": "15.2.3",
+    "vitest": "^3.2.7"
   }
 }
