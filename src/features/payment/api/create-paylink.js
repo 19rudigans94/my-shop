@@ -1,6 +1,31 @@
 import { NextResponse } from "next/server";
 import { getTimePlus30Minutes } from "@/shared/lib/time";
-import { createOrder, storeOrderDataForProcessing } from "@/entities/order/api";
+import {
+  createOrder,
+  setOrderPaylinkProductId,
+  cancelPendingOrder,
+} from "@/entities/order/api";
+import { priceCart, CartValidationError } from "@/features/payment/api/price-cart";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function parseCustomerInfo(customerInfo) {
+  const email = String(customerInfo?.email || "").trim();
+  const phoneNumber = String(customerInfo?.phoneNumber || "").trim();
+  if (!EMAIL_RE.test(email) || email.length > 254) {
+    throw new CartValidationError("Некорректный email");
+  }
+  if (phoneNumber.replace(/\D/g, "").length < 10 || phoneNumber.length > 32) {
+    throw new CartValidationError("Некорректный номер телефона");
+  }
+  return { email, phoneNumber };
+}
+
+function withOrderParam(url, orderId) {
+  const u = new URL(url);
+  u.searchParams.set("order", orderId);
+  return u.toString();
+}
 
 export async function handleCreatePayLink(request) {
   const expired_at = getTimePlus30Minutes();
@@ -26,37 +51,47 @@ export async function handleCreatePayLink(request) {
       );
     }
 
-    const baseData = {
+    // Сумма считается только по ценам из БД. totalPrice/price от клиента игнорируются.
+    let priced;
+    let customerInfo;
+    try {
+      priced = await priceCart(cartData?.items);
+      customerInfo = parseCustomerInfo(cartData?.customerInfo);
+    } catch (error) {
+      if (error instanceof CartValidationError) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 400 }
+        );
+      }
+      throw error;
+    }
+
+    // Заказ создается до ссылки на оплату, чтобы его ID попал в return_url
+    const orderId = await createOrder({ ...priced, customerInfo });
+
+    const orderDescription = `Заказ ${orderId}: ${priced.items
+      .map((item) => `${item.name} (${item.quantity}шт)`)
+      .join(", ")}`;
+
+    const orderName =
+      priced.totalItems > 1
+        ? `Заказ из ${priced.totalItems} товар${priced.totalItems > 4 ? "ов" : "а"}`
+        : priced.items[0].name;
+
+    const payload = {
+      name: orderName,
+      description: orderDescription,
+      amount: Math.round(priced.totalPrice * 100).toString(),
       currency: "KZT",
       infinite: true,
       test: process.env.NODE_ENV !== "production",
       immortal: false,
       expired_at: expired_at,
-      return_url: returnUrl,
+      return_url: withOrderParam(returnUrl, orderId),
       shop_id: shopId,
       language: "ru",
       transaction_type: "payment",
-    };
-
-    const orderDescription =
-      cartData.items && cartData.items.length > 0
-        ? `Заказ: ${cartData.items
-            .map((item) => `${item.title} (${item.quantity}шт)`)
-            .join(", ")}`
-        : "Заказ из интернет-магазина";
-
-    const orderName =
-      cartData.totalItems > 1
-        ? `Заказ из ${cartData.totalItems} товар${
-            cartData.totalItems > 4 ? "ов" : cartData.totalItems > 1 ? "а" : ""
-          }`
-        : cartData.items?.[0]?.title || "Покупка в интернет-магазине";
-
-    const payload = {
-      name: orderName,
-      description: orderDescription,
-      amount: (cartData.totalPrice * 100).toString(),
-      ...baseData,
     };
 
     const authString = `${shopId}:${shopSecret}`;
@@ -73,6 +108,7 @@ export async function handleCreatePayLink(request) {
     });
 
     if (!response.ok) {
+      await cancelPendingOrder(orderId);
       let error;
       let errorMessage = "Ошибка при создании ссылки для оплаты";
 
@@ -122,6 +158,7 @@ export async function handleCreatePayLink(request) {
     try {
       result = await response.json();
     } catch (parseError) {
+      await cancelPendingOrder(orderId);
       return NextResponse.json(
         {
           success: false,
@@ -132,17 +169,7 @@ export async function handleCreatePayLink(request) {
       );
     }
 
-    try {
-      const orderDataWithPayLink = {
-        ...cartData,
-        paylinkProductId: result.id,
-      };
-      const orderId = await createOrder(orderDataWithPayLink);
-      storeOrderDataForProcessing(result.id, cartData);
-    } catch (dbError) {
-      console.error("Ошибка при сохранении заказа в БД:", dbError.message);
-      storeOrderDataForProcessing(result.id, cartData);
-    }
+    await setOrderPaylinkProductId(orderId, result.id);
 
     return NextResponse.json({
       success: true,

@@ -115,5 +115,14 @@ orderSchema.index({ "customerInfo.email": 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ paymentStatus: 1 });
 orderSchema.index({ createdAt: -1 });
+orderSchema.index({ "paymentData.paylinkProductId": 1 });
+// Одна транзакция PayLink может оплатить только один заказ
+orderSchema.index(
+  { "paymentData.paylinkUid": 1 },
+  {
+    unique: true,
+    partialFilterExpression: { "paymentData.paylinkUid": { $type: "string" } },
+  }
+);
 
 export default mongoose.models.Order || mongoose.model("Order", orderSchema);
